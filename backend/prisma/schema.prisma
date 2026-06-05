@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  password      String
+  name          String
+  createdAt     DateTime      @default(now())
+  projects      Project[]
+  references    Reference[]
+  preferences   Preferences?
+  refreshTokens RefreshToken[]
+}
+
+model Project {
+  id           String             @id @default(cuid())
+  userId       String
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nome         String
+  tipo         String?
+  complexidade String?
+  cliente      String?
+  descricao    String
+  icone        String?
+  status       String             @default("andamento")
+  currentPhase Int                @default(1)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  phases       Phase[]
+  references   ProjectReference[]
+}
+
+model Phase {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  numero     Int
+  nome       String
+  status     String   @default("pendente")
+  notas      String?
+  resultado  Json?
+  paleta     Json?
+  tipografia Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([projectId, numero])
+}
+
+model Reference {
+  id           String             @id @default(cuid())
+  userId       String
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nome         String
+  link         String?
+  categoria    String
+  subcategoria String?
+  anotacoes    String?
+  corFundo     String?
+  createdAt    DateTime           @default(now())
+  projects     ProjectReference[]
+}
+
+model ProjectReference {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  referenceId String
+  reference   Reference @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+  phaseNumero Int?
+
+  @@unique([projectId, referenceId])
+}
+
+model Preferences {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stackFavorita    String?
+  padroesCodigo    String?
+  observacoesFixas String?
+  updatedAt        DateTime @updatedAt
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
