@@ -6,8 +6,8 @@ import ContextExporter from '../components/ContextExporter.jsx';
 import LinkReferenceModal from './LinkReferenceModal.jsx';
 import { IconLoader2, IconArrowLeft, IconLink, IconBolt } from '@tabler/icons-react';
 
-const PHASE_NAMES = ['Briefing', 'Referências', 'Identidade', 'Wireframe', 'Design', 'Código', 'Testes', 'Deploy'];
-const PHASE_SHORT = ['Brief', 'Refs', 'ID', 'Wire', 'Design', 'Código', 'Testes', 'Deploy'];
+const PHASE_NAMES = ['Ideia', 'Arquitetura', 'Design', 'Segurança', 'Desenvolvimento', 'Testes', 'Deploy', 'Entrega'];
+const PHASE_SHORT = ['Ideia', 'Arq', 'Design', 'Seg', 'Dev', 'Testes', 'Deploy', 'Entrega'];
 
 function PhasePip({ phase, isOpen, onClick }) {
   const blocked = phase.status === 'pendente';

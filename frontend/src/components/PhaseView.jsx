@@ -82,7 +82,15 @@ export default function PhaseView({ project, phase, onPhaseUpdated, onConclude }
   const canConclude = phase.numero === 1 || prevPhase?.status === 'concluida';
   const isAlreadyConcluded = phase.status === 'concluida';
 
-  const paleta = phase.paleta?.cores || [];
+  const paleta = (() => {
+    const p = phase.paleta;
+    if (!p || typeof p !== 'object') return [];
+    if (Array.isArray(p.cores)) return p.cores;
+    const labels = { primaria: 'Primária', secundaria: 'Secundária', acento: 'Acento', texto: 'Texto' };
+    return Object.entries(p)
+      .filter(([, v]) => typeof v === 'string' && v.startsWith('#'))
+      .map(([k, v]) => ({ hex: v, label: labels[k] || k }));
+  })();
   const tipografia = phase.tipografia;
   const vinculadas = project.references?.filter(
     (pr) => pr.phaseNumero === phase.numero || pr.phaseNumero === null
