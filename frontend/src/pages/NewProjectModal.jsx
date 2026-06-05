@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../services/api.jsx';
+import { IconX } from '@tabler/icons-react';
 
 const PHASE_NAMES = [
   'Briefing', 'Referências', 'Identidade', 'Wireframe',
@@ -16,12 +17,11 @@ const ICONS = [
 ];
 
 export default function NewProjectModal({ onClose, onCreated }) {
-  const [mode, setMode] = useState('novo'); // 'novo' | 'importar'
+  const [mode, setMode] = useState('novo');
   const [form, setForm] = useState({
     nome: '', tipo: '', complexidade: '', cliente: '', descricao: '', icone: 'ti-device-laptop',
   });
   const [fasesConcluidasAte, setFasesConcluidasAte] = useState(0);
-  const [phaseNotes, setPhaseNotes] = useState({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -36,7 +36,6 @@ export default function NewProjectModal({ onClose, onCreated }) {
         ...form,
         fasesConcluidasAte: mode === 'importar' ? fasesConcluidasAte : 0,
       });
-      // Update notes for concluded phases if importing
       onCreated();
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao criar projeto.');
@@ -52,11 +51,10 @@ export default function NewProjectModal({ onClose, onCreated }) {
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <h2 className="text-sm font-medium text-dark">novo projeto</h2>
           <button onClick={onClose} className="text-faint hover:text-dark transition-colors">
-            <i className="ti-x text-base" />
+            <IconX size={18} />
           </button>
         </div>
 
-        {/* Modo */}
         <div className="flex border-b border-border">
           {['novo', 'importar'].map((m) => (
             <button

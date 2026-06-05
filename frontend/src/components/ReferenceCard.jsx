@@ -1,3 +1,5 @@
+import { IconPencil, IconTrash } from '@tabler/icons-react';
+
 const SAMPLE_FONTS = ['DM Sans', 'Inter', 'Poppins', 'Playfair Display', 'Space Grotesk'];
 
 function TypographyPreview({ nome }) {
@@ -108,7 +110,7 @@ export default function ReferenceCard({ reference, onEdit, onDelete }) {
                 onClick={() => onEdit(reference)}
                 className="p-1 text-faint hover:text-terra transition-colors"
               >
-                <i className="ti-pencil text-sm" />
+                <IconPencil size={16} />
               </button>
             )}
             {onDelete && (
@@ -116,7 +118,7 @@ export default function ReferenceCard({ reference, onEdit, onDelete }) {
                 onClick={() => onDelete(reference.id)}
                 className="p-1 text-faint hover:text-red-500 transition-colors"
               >
-                <i className="ti-trash text-sm" />
+                <IconTrash size={16} />
               </button>
             )}
           </div>

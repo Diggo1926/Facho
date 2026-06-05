@@ -1,4 +1,8 @@
 import { useNavigate } from 'react-router-dom';
+import {
+  IconShoppingBag, IconHanger, IconUsers, IconBasket,
+  IconDeviceLaptop, IconBuilding, IconPlus,
+} from '@tabler/icons-react';
 
 const TYPE_ICONS = {
   loja: 'ti-shopping-bag',
@@ -11,6 +15,15 @@ const TYPE_ICONS = {
   sistema: 'ti-device-laptop',
   empresa: 'ti-building',
   default: 'ti-device-laptop',
+};
+
+const ICON_COMPONENTS = {
+  'ti-shopping-bag': IconShoppingBag,
+  'ti-hanger': IconHanger,
+  'ti-users': IconUsers,
+  'ti-basket': IconBasket,
+  'ti-device-laptop': IconDeviceLaptop,
+  'ti-building': IconBuilding,
 };
 
 function getIcon(tipo) {
@@ -74,7 +87,7 @@ export default function ProjectCard({ project, isActive = false, isNew = false, 
         onClick={onCreate}
         className="flex flex-col items-center justify-center gap-2 border border-dashed border-[#C9BFB0] rounded-card p-4 h-[140px] hover:border-caramel hover:bg-cream transition-colors group"
       >
-        <i className="ti-plus text-caramel text-2xl group-hover:scale-110 transition-transform" />
+        <IconPlus size={28} className="text-caramel group-hover:scale-110 transition-transform" />
         <span className="text-sm text-muted group-hover:text-caramel transition-colors">
           novo projeto
         </span>
@@ -82,7 +95,8 @@ export default function ProjectCard({ project, isActive = false, isNew = false, 
     );
   }
 
-  const icon = project.icone || getIcon(project.tipo);
+  const iconKey = project.icone || getIcon(project.tipo);
+  const IconComp = ICON_COMPONENTS[iconKey] || IconDeviceLaptop;
 
   return (
     <button
@@ -102,10 +116,7 @@ export default function ProjectCard({ project, isActive = false, isNew = false, 
 
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <i
-            className={`${icon} text-terra`}
-            style={{ fontSize: isActive ? '36px' : '32px' }}
-          />
+          <IconComp size={isActive ? 36 : 32} className="text-terra" />
           <div>
             <p
               className="text-dark font-medium leading-tight"

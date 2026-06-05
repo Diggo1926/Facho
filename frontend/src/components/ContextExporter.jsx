@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api.jsx';
+import { IconX, IconLoader2, IconCheck, IconCopy } from '@tabler/icons-react';
 
 export default function ContextExporter({ projectId, open, onClose }) {
   const [context, setContext] = useState('');
@@ -32,14 +33,14 @@ export default function ContextExporter({ projectId, open, onClose }) {
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <h2 className="text-sm font-medium text-dark">contexto para o Claude</h2>
           <button onClick={onClose} className="text-faint hover:text-dark transition-colors">
-            <i className="ti-x text-base" />
+            <IconX size={18} />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
           {loading ? (
             <div className="flex items-center justify-center h-32 text-faint">
-              <i className="ti-loader-2 animate-spin text-xl" />
+              <IconLoader2 size={24} className="animate-spin" />
             </div>
           ) : (
             <pre className="text-xs text-dark font-mono whitespace-pre-wrap leading-relaxed bg-cream p-4 rounded-btn border border-border">
@@ -56,7 +57,7 @@ export default function ContextExporter({ projectId, open, onClose }) {
               copied ? 'bg-[#4A6A1F]' : ''
             }`}
           >
-            <i className={`text-sm ${copied ? 'ti-check' : 'ti-copy'}`} />
+            {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
             {copied ? '✓ copiado' : 'copiar'}
           </button>
         </div>

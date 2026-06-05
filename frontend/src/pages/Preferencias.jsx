@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api.jsx';
+import { IconCheck, IconLoader2 } from '@tabler/icons-react';
 
 export default function Preferencias() {
   const [form, setForm] = useState({
@@ -39,7 +40,7 @@ export default function Preferencias() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 text-faint">
-        <i className="ti-loader-2 animate-spin text-2xl" />
+        <IconLoader2 size={28} className="animate-spin" />
       </div>
     );
   }
@@ -103,12 +104,12 @@ export default function Preferencias() {
         >
           {saved ? (
             <>
-              <i className="ti-check text-sm" />
+              <IconCheck size={16} />
               salvo!
             </>
           ) : saving ? (
             <>
-              <i className="ti-loader-2 animate-spin text-sm" />
+              <IconLoader2 size={16} className="animate-spin" />
               salvando...
             </>
           ) : (

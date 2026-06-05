@@ -4,6 +4,7 @@ import api from '../services/api.jsx';
 import PhaseView from '../components/PhaseView.jsx';
 import ContextExporter from '../components/ContextExporter.jsx';
 import LinkReferenceModal from './LinkReferenceModal.jsx';
+import { IconLoader2, IconArrowLeft, IconLink, IconBolt } from '@tabler/icons-react';
 
 const PHASE_NAMES = ['Briefing', 'Referências', 'Identidade', 'Wireframe', 'Design', 'Código', 'Testes', 'Deploy'];
 const PHASE_SHORT = ['Brief', 'Refs', 'ID', 'Wire', 'Design', 'Código', 'Testes', 'Deploy'];
@@ -61,7 +62,7 @@ export default function Projeto() {
   if (loading || !project) {
     return (
       <div className="flex items-center justify-center h-64 text-faint">
-        <i className="ti-loader-2 animate-spin text-2xl" />
+        <IconLoader2 size={28} className="animate-spin" />
       </div>
     );
   }
@@ -70,7 +71,6 @@ export default function Projeto() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -78,7 +78,7 @@ export default function Projeto() {
               onClick={() => navigate('/projetos')}
               className="text-faint hover:text-dark transition-colors"
             >
-              <i className="ti-arrow-left text-sm" />
+              <IconArrowLeft size={16} />
             </button>
             <h1 className="text-base font-medium text-dark">{project.nome}</h1>
             {project.status === 'concluido' && (
@@ -95,20 +95,19 @@ export default function Projeto() {
             onClick={() => setShowLink(true)}
             className="btn-secondary flex items-center gap-1.5"
           >
-            <i className="ti-link text-sm" />
+            <IconLink size={16} />
             vincular ref
           </button>
           <button
             onClick={() => setShowContext(true)}
             className="btn-primary flex items-center gap-1.5"
           >
-            <i className="ti-bolt text-sm" />
+            <IconBolt size={16} />
             exportar contexto
           </button>
         </div>
       </div>
 
-      {/* Pipeline */}
       <div className="flex gap-1.5 overflow-x-auto pb-1">
         {project.phases.map((phase) => (
           <PhasePip
@@ -120,7 +119,6 @@ export default function Projeto() {
         ))}
       </div>
 
-      {/* Fase header */}
       {currentPhaseMeta && (
         <div className="flex items-center gap-3">
           <span className="text-xs text-faint">
@@ -140,7 +138,6 @@ export default function Projeto() {
         </div>
       )}
 
-      {/* Conteúdo da fase */}
       <PhaseView
         project={project}
         phase={currentPhaseMeta}

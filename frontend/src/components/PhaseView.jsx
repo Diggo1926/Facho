@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import api from '../services/api.jsx';
+import { IconBookmark, IconLoader2, IconCheck } from '@tabler/icons-react';
 
 function ColorSwatch({ hex, label }) {
   return (
@@ -90,7 +91,6 @@ export default function PhaseView({ project, phase, onPhaseUpdated, onConclude }
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        {/* Paleta */}
         <div className="card">
           <p className="text-xs font-medium text-muted mb-3">paleta de cores</p>
           {paleta.length > 0 ? (
@@ -104,7 +104,6 @@ export default function PhaseView({ project, phase, onPhaseUpdated, onConclude }
           )}
         </div>
 
-        {/* Tipografia */}
         <div className="card">
           <p className="text-xs font-medium text-muted mb-3">tipografia</p>
           {tipografia ? (
@@ -114,7 +113,6 @@ export default function PhaseView({ project, phase, onPhaseUpdated, onConclude }
           )}
         </div>
 
-        {/* Referências vinculadas */}
         <div className="card">
           <p className="text-xs font-medium text-muted mb-3">referências vinculadas</p>
           <div className="flex flex-wrap gap-2">
@@ -124,7 +122,7 @@ export default function PhaseView({ project, phase, onPhaseUpdated, onConclude }
                   key={pr.id}
                   className="flex items-center gap-1 text-xs px-2.5 py-1 bg-cream border border-border rounded-full text-muted"
                 >
-                  <i className="ti-bookmark text-caramel text-xs" />
+                  <IconBookmark size={12} className="text-caramel" />
                   {pr.reference?.nome}
                 </span>
               ))
@@ -134,13 +132,12 @@ export default function PhaseView({ project, phase, onPhaseUpdated, onConclude }
           </div>
         </div>
 
-        {/* Notas */}
         <div className="card">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-medium text-muted">notas da fase</p>
             {saving && (
               <span className="text-[10px] text-faint flex items-center gap-1">
-                <i className="ti-loader-2 animate-spin text-xs" />
+                <IconLoader2 size={12} className="animate-spin" />
                 salvando
               </span>
             )}
@@ -156,7 +153,6 @@ export default function PhaseView({ project, phase, onPhaseUpdated, onConclude }
         </div>
       </div>
 
-      {/* Botão concluir */}
       {!isAlreadyConcluded && (
         <div className="flex justify-end pt-2">
           <button
@@ -168,7 +164,7 @@ export default function PhaseView({ project, phase, onPhaseUpdated, onConclude }
                 : 'bg-border text-faint cursor-not-allowed'
             }`}
           >
-            <i className="ti-check text-sm" />
+            <IconCheck size={16} />
             {concluding ? 'concluindo...' : 'marcar como concluída'}
           </button>
         </div>

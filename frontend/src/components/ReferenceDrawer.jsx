@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconX } from '@tabler/icons-react';
 
 const CATEGORIAS = ['design', 'seguranca', 'infraestrutura', 'codigo', 'prompts'];
 
@@ -45,7 +46,6 @@ export default function ReferenceDrawer({ open, onClose, onSave, initial = null 
 
   return (
     <>
-      {/* Overlay */}
       <div
         className={`fixed inset-0 bg-black z-40 transition-opacity duration-250 ${
           open ? 'opacity-40 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -53,7 +53,6 @@ export default function ReferenceDrawer({ open, onClose, onSave, initial = null 
         onClick={onClose}
       />
 
-      {/* Drawer */}
       <div
         className={`fixed top-0 right-0 h-full w-[300px] bg-surface border-l border-border z-50 flex flex-col shadow-lg transition-transform duration-[250ms] ease-in-out ${
           open ? 'translate-x-0' : 'translate-x-full'
@@ -64,7 +63,7 @@ export default function ReferenceDrawer({ open, onClose, onSave, initial = null 
             {initial ? 'editar referência' : 'nova referência'}
           </h2>
           <button onClick={onClose} className="text-faint hover:text-dark transition-colors">
-            <i className="ti-x text-base" />
+            <IconX size={18} />
           </button>
         </div>
 

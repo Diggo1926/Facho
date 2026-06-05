@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import api from '../services/api.jsx';
 import ReferenceCard from '../components/ReferenceCard.jsx';
 import ReferenceDrawer from '../components/ReferenceDrawer.jsx';
+import { IconPlus, IconSearch, IconLoader2, IconBookmark } from '@tabler/icons-react';
 
 const CAT_LABELS = {
   design: 'Design',
@@ -87,15 +88,14 @@ export default function Categoria() {
           onClick={() => { setEditingRef(null); setDrawerOpen(true); }}
           className="btn-primary flex items-center gap-2"
         >
-          <i className="ti-plus text-sm" />
+          <IconPlus size={16} />
           adicionar
         </button>
       </div>
 
-      {/* Filtros e busca */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative">
-          <i className="ti-search absolute left-3 top-1/2 -translate-y-1/2 text-faint text-xs" />
+          <IconSearch size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input
             type="text"
             placeholder="buscar..."
@@ -134,11 +134,11 @@ export default function Categoria() {
 
       {loading ? (
         <div className="flex items-center justify-center h-48 text-faint">
-          <i className="ti-loader-2 animate-spin text-2xl" />
+          <IconLoader2 size={28} className="animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-48 gap-3 text-center">
-          <i className="ti-bookmark text-4xl text-border" />
+          <IconBookmark size={48} className="text-border" />
           <p className="text-sm text-faint">nenhuma referência encontrada</p>
           <button
             onClick={() => { setEditingRef(null); setDrawerOpen(true); }}

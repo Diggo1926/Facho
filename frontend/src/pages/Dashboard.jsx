@@ -3,14 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
 import NewProjectModal from './NewProjectModal.jsx';
+import {
+  IconLoader2, IconPalette, IconShieldLock, IconServer, IconCode, IconMessageBolt,
+} from '@tabler/icons-react';
 
 const CATS = ['design', 'seguranca', 'infraestrutura', 'codigo', 'prompts'];
-const CAT_ICONS = {
-  design: 'ti-palette',
-  seguranca: 'ti-shield-lock',
-  infraestrutura: 'ti-server',
-  codigo: 'ti-code',
-  prompts: 'ti-message-bolt',
+const CAT_ICON_COMPONENTS = {
+  design: IconPalette,
+  seguranca: IconShieldLock,
+  infraestrutura: IconServer,
+  codigo: IconCode,
+  prompts: IconMessageBolt,
 };
 
 export default function Dashboard() {
@@ -47,7 +50,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 text-faint">
-        <i className="ti-loader-2 animate-spin text-2xl" />
+        <IconLoader2 size={28} className="animate-spin" />
       </div>
     );
   }
@@ -61,7 +64,6 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Projetos */}
       <section>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-medium text-muted uppercase tracking-widest">projetos em andamento</h2>
@@ -85,25 +87,27 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Biblioteca */}
       <section>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-medium text-muted uppercase tracking-widest">biblioteca</h2>
         </div>
         <div className="grid grid-cols-5 gap-3">
-          {CATS.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => navigate(`/biblioteca/${cat}`)}
-              className="card hover:shadow-sm transition-shadow text-left group"
-            >
-              <i className={`${CAT_ICONS[cat]} text-caramel text-xl mb-2 block`} />
-              <p className="text-sm font-medium text-dark capitalize">{cat}</p>
-              <p className="text-xs text-faint mt-0.5">
-                {refCounts[cat] || 0} referência{refCounts[cat] !== 1 ? 's' : ''}
-              </p>
-            </button>
-          ))}
+          {CATS.map((cat) => {
+            const CatIcon = CAT_ICON_COMPONENTS[cat];
+            return (
+              <button
+                key={cat}
+                onClick={() => navigate(`/biblioteca/${cat}`)}
+                className="card hover:shadow-sm transition-shadow text-left group"
+              >
+                <CatIcon size={22} className="text-caramel mb-2" />
+                <p className="text-sm font-medium text-dark capitalize">{cat}</p>
+                <p className="text-xs text-faint mt-0.5">
+                  {refCounts[cat] || 0} referência{refCounts[cat] !== 1 ? 's' : ''}
+                </p>
+              </button>
+            );
+          })}
         </div>
       </section>
 

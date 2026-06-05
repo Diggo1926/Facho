@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api.jsx';
+import { IconX, IconLoader2, IconBookmark } from '@tabler/icons-react';
 
 export default function LinkReferenceModal({ project, onClose, onLinked }) {
   const [references, setReferences] = useState([]);
@@ -38,14 +39,14 @@ export default function LinkReferenceModal({ project, onClose, onLinked }) {
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <h2 className="text-sm font-medium text-dark">vincular referência</h2>
           <button onClick={onClose} className="text-faint hover:text-dark transition-colors">
-            <i className="ti-x text-base" />
+            <IconX size={18} />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {loading ? (
             <div className="flex justify-center py-8 text-faint">
-              <i className="ti-loader-2 animate-spin text-xl" />
+              <IconLoader2 size={24} className="animate-spin" />
             </div>
           ) : (
             <>
@@ -67,7 +68,10 @@ export default function LinkReferenceModal({ project, onClose, onLinked }) {
                             : 'hover:bg-cream border border-border'
                         }`}
                       >
-                        <i className={`ti-bookmark text-sm ${selected === ref.id ? 'text-white' : 'text-caramel'}`} />
+                        <IconBookmark
+                          size={16}
+                          className={selected === ref.id ? 'text-white' : 'text-caramel'}
+                        />
                         <div className="flex-1 min-w-0">
                           <span className="text-sm truncate block">{ref.nome}</span>
                           <span className={`text-[10px] ${selected === ref.id ? 'text-white/70' : 'text-faint'}`}>

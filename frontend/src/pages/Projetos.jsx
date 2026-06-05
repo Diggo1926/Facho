@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../services/api.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
 import NewProjectModal from './NewProjectModal.jsx';
+import { IconLoader2, IconPlus, IconFolders } from '@tabler/icons-react';
 
 export default function Projetos() {
   const [projects, setProjects] = useState([]);
@@ -23,7 +24,7 @@ export default function Projetos() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 text-faint">
-        <i className="ti-loader-2 animate-spin text-2xl" />
+        <IconLoader2 size={28} className="animate-spin" />
       </div>
     );
   }
@@ -39,14 +40,14 @@ export default function Projetos() {
           <p className="text-sm text-faint mt-0.5">{projects.length} projeto{projects.length !== 1 ? 's' : ''}</p>
         </div>
         <button onClick={() => setShowNew(true)} className="btn-primary flex items-center gap-2">
-          <i className="ti-plus text-sm" />
+          <IconPlus size={16} />
           novo projeto
         </button>
       </div>
 
       {projects.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-48 text-center gap-3">
-          <i className="ti-folders text-4xl text-border" />
+          <IconFolders size={48} className="text-border" />
           <p className="text-sm text-faint">nenhum projeto ainda</p>
           <button onClick={() => setShowNew(true)} className="btn-primary">
             criar primeiro projeto

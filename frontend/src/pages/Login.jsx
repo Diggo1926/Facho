@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
+import { IconFlame, IconLoader2 } from '@tabler/icons-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -27,9 +28,8 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-cream flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <i className="ti-flame text-terra text-3xl" />
+          <IconFlame size={32} className="text-terra" />
           <span className="text-dark font-medium text-2xl tracking-tight">Facho</span>
         </div>
 
@@ -77,7 +77,7 @@ export default function Login() {
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <i className="ti-loader-2 animate-spin text-sm" />
+                  <IconLoader2 size={16} className="animate-spin" />
                   entrando...
                 </span>
               ) : (

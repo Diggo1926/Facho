@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api.jsx';
+import { IconSearch, IconLoader2, IconFolders, IconBookmark } from '@tabler/icons-react';
 
 const CAT_COLORS = {
   design: 'bg-[#F0E8DC] text-[#8B5A2B]',
@@ -60,7 +61,7 @@ export default function SearchBar() {
   return (
     <div ref={containerRef} className="relative w-full max-w-lg">
       <div className="relative">
-        <i className="ti-search absolute left-3 top-1/2 -translate-y-1/2 text-faint text-sm" />
+        <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
         <input
           type="text"
           placeholder="buscar projetos e referências..."
@@ -69,7 +70,7 @@ export default function SearchBar() {
           className="w-full pl-9 pr-4 py-2 text-sm border border-border rounded-btn bg-surface focus:outline-none focus:border-terra transition-colors"
         />
         {loading && (
-          <i className="ti-loader-2 absolute right-3 top-1/2 -translate-y-1/2 text-faint text-sm animate-spin" />
+          <IconLoader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-faint animate-spin" />
         )}
       </div>
 
@@ -94,7 +95,7 @@ export default function SearchBar() {
                   }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-cream text-left transition-colors"
                 >
-                  <i className="ti-folders text-terra text-sm" />
+                  <IconFolders size={16} className="text-terra shrink-0" />
                   <span className="text-sm text-dark">{p.nome}</span>
                   {p.cliente && (
                     <span className="text-xs text-faint ml-auto">{p.cliente}</span>
@@ -119,7 +120,7 @@ export default function SearchBar() {
                   }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-cream text-left transition-colors"
                 >
-                  <i className="ti-bookmark text-caramel text-sm" />
+                  <IconBookmark size={16} className="text-caramel shrink-0" />
                   <span className="text-sm text-dark flex-1">{r.nome}</span>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
