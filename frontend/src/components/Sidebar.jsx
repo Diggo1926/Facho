@@ -45,7 +45,7 @@ export default function Sidebar() {
   return (
     <aside className="w-[220px] min-h-screen bg-surface border-r border-border flex flex-col py-5 px-3 shrink-0">
       <div className="flex items-center gap-2 px-3 mb-7">
-        <img src="/logo-facho.png" alt="Facho" style={{ width: '28px', height: '28px', mixBlendMode: 'multiply', objectFit: 'contain' }} />
+        <img src="/logo-facho.png" alt="Facho" style={{ width: '40px', height: '40px', mixBlendMode: 'multiply', objectFit: 'contain' }} />
         <span className="text-dark font-medium text-base tracking-tight">Facho</span>
       </div>
 
