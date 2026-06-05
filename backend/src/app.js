@@ -8,6 +8,18 @@ import phaseRoutes from './routes/phases.js';
 import referenceRoutes from './routes/references.js';
 import preferenceRoutes from './routes/preferences.js';
 
+console.log('Iniciando Facho backend...');
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+  process.exit(1);
+});
+
 const app = express();
 app.set('trust proxy', 1);
 
