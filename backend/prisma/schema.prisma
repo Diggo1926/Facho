@@ -55,17 +55,19 @@ model Phase {
 }
 
 model Reference {
-  id           String             @id @default(cuid())
-  userId       String
-  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  nome         String
-  link         String?
-  categoria    String
-  subcategoria String?
-  anotacoes    String?
-  corFundo     String?
-  createdAt    DateTime           @default(now())
-  projects     ProjectReference[]
+  id            String             @id @default(cuid())
+  userId        String
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nome          String
+  link          String?
+  categoria     String
+  subcategoria  String?
+  anotacoes     String?
+  corFundo      String?
+  tags          String[]           @default([])
+  screenshotUrl String?
+  createdAt     DateTime           @default(now())
+  projects      ProjectReference[]
 }
 
 model ProjectReference {

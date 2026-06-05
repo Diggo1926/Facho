@@ -3,6 +3,7 @@ import { body, param, query } from 'express-validator';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
+import { getMicrolinkScreenshot } from '../services/screenshot.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -12,19 +13,31 @@ router.post(
   '/',
   requireAuth,
   [
-    body('nome').trim().notEmpty().isLength({ max: 200 }).withMessage('Nome obrigatório (máx. 200 chars).'),
-    body('categoria').trim().notEmpty().isIn(['design', 'seguranca', 'infraestrutura', 'codigo', 'prompts']).withMessage('Categoria inválida.'),
-    body('link').optional({ nullable: true }).isURL().withMessage('Link inválido.'),
+    body('nome').trim().notEmpty().isLength({ max: 200 }),
+    body('categoria').trim().notEmpty().isIn(['design', 'seguranca', 'infraestrutura', 'codigo', 'prompts']),
+    body('link').optional({ nullable: true }).isURL(),
     body('subcategoria').optional({ nullable: true }).trim().isLength({ max: 100 }),
     body('anotacoes').optional({ nullable: true }).trim().isLength({ max: 2000 }),
-    body('corFundo').optional({ nullable: true }).trim().matches(/^#[0-9A-Fa-f]{3,6}$/).withMessage('Cor inválida (use hex, ex: #7A4A3A).'),
+    body('corFundo').optional({ nullable: true }).trim().matches(/^#[0-9A-Fa-f]{3,6}$/),
+    body('tags').optional({ nullable: true }).isArray(),
   ],
   validate,
   async (req, res) => {
     try {
-      const { nome, link, categoria, subcategoria, anotacoes, corFundo } = req.body;
+      const { nome, link, categoria, subcategoria, anotacoes, corFundo, tags } = req.body;
+      const screenshotUrl = link ? getMicrolinkScreenshot(link) : null;
       const reference = await prisma.reference.create({
-        data: { userId: req.userId, nome, link, categoria, subcategoria, anotacoes, corFundo },
+        data: {
+          userId: req.userId,
+          nome,
+          link,
+          categoria,
+          subcategoria,
+          anotacoes,
+          corFundo,
+          tags: tags || [],
+          screenshotUrl,
+        },
       });
       res.status(201).json(reference);
     } catch {
@@ -47,6 +60,7 @@ router.get(
       };
       const references = await prisma.reference.findMany({
         where,
+        include: { projects: true },
         orderBy: { createdAt: 'desc' },
       });
       res.json(references);
@@ -60,7 +74,7 @@ router.get(
 router.get(
   '/search',
   requireAuth,
-  [query('q').trim().notEmpty().withMessage('Termo de busca obrigatório.')],
+  [query('q').trim().notEmpty()],
   validate,
   async (req, res) => {
     try {
@@ -74,6 +88,7 @@ router.get(
             { subcategoria: { contains: q, mode: 'insensitive' } },
           ],
         },
+        include: { projects: true },
         orderBy: { createdAt: 'desc' },
       });
       res.json(references);
@@ -95,6 +110,7 @@ router.patch(
     body('subcategoria').optional({ nullable: true }).trim().isLength({ max: 100 }),
     body('anotacoes').optional({ nullable: true }).trim().isLength({ max: 2000 }),
     body('corFundo').optional({ nullable: true }).trim().matches(/^#[0-9A-Fa-f]{3,6}$/),
+    body('tags').optional({ nullable: true }).isArray(),
   ],
   validate,
   async (req, res) => {
@@ -102,16 +118,19 @@ router.patch(
       const ref = await prisma.reference.findFirst({ where: { id: req.params.id, userId: req.userId } });
       if (!ref) return res.status(404).json({ error: 'Referência não encontrada.' });
 
-      const { nome, link, categoria, subcategoria, anotacoes, corFundo } = req.body;
+      const { nome, link, categoria, subcategoria, anotacoes, corFundo, tags } = req.body;
+      const screenshotUrl = link !== undefined ? getMicrolinkScreenshot(link) : undefined;
+
       const updated = await prisma.reference.update({
         where: { id: req.params.id },
         data: {
           ...(nome !== undefined && { nome }),
-          ...(link !== undefined && { link }),
+          ...(link !== undefined && { link, screenshotUrl }),
           ...(categoria !== undefined && { categoria }),
           ...(subcategoria !== undefined && { subcategoria }),
           ...(anotacoes !== undefined && { anotacoes }),
           ...(corFundo !== undefined && { corFundo }),
+          ...(tags !== undefined && { tags }),
         },
       });
       res.json(updated);
@@ -131,7 +150,6 @@ router.delete(
     try {
       const ref = await prisma.reference.findFirst({ where: { id: req.params.id, userId: req.userId } });
       if (!ref) return res.status(404).json({ error: 'Referência não encontrada.' });
-
       await prisma.reference.delete({ where: { id: req.params.id } });
       res.json({ message: 'Referência deletada.' });
     } catch {

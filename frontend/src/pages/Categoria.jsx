@@ -1,9 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api.jsx';
 import ReferenceCard from '../components/ReferenceCard.jsx';
 import ReferenceDrawer from '../components/ReferenceDrawer.jsx';
 import { IconPlus, IconSearch, IconLoader2, IconBookmark } from '@tabler/icons-react';
+
+function dailySeed() {
+  const s = new Date().toDateString();
+  return s.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+}
+
+function seededShuffle(arr, seed) {
+  const a = [...arr];
+  let s = seed;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    const j = Math.abs(s) % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 const CAT_LABELS = {
   design: 'Design',
@@ -42,8 +58,10 @@ export default function Categoria() {
     setSearch('');
   }, [categoria]); // eslint-disable-line
 
+  const seed = useMemo(() => dailySeed(), []);
+
   useEffect(() => {
-    let f = refs;
+    let f = seededShuffle(refs, seed);
     if (activeSubcat) f = f.filter((r) => r.subcategoria === activeSubcat);
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -54,7 +72,7 @@ export default function Categoria() {
       );
     }
     setFiltered(f);
-  }, [refs, activeSubcat, search]);
+  }, [refs, activeSubcat, search, seed]);
 
   async function handleSave(form) {
     if (editingRef) {

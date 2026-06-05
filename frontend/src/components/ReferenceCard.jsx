@@ -1,93 +1,49 @@
-import { IconPencil, IconTrash } from '@tabler/icons-react';
+import { IconPencil, IconTrash, IconExternalLink, IconBookmark } from '@tabler/icons-react';
 
-const SAMPLE_FONTS = ['DM Sans', 'Inter', 'Poppins', 'Playfair Display', 'Space Grotesk'];
-
-function TypographyPreview({ nome }) {
-  const fontName = SAMPLE_FONTS.find((f) => nome.toLowerCase().includes(f.toLowerCase())) || 'DM Sans';
-  return (
-    <div
-      className="p-4 rounded-t-card border-b border-border bg-cream flex flex-col items-center justify-center h-32"
-      style={{ fontFamily: fontName }}
-    >
-      <span className="text-5xl text-dark font-medium">Aa</span>
-      <span className="text-xs text-muted mt-1 tracking-wider">
-        ABCDEFGHIJKLMNOPQRSTUVWXYZ
-      </span>
-    </div>
-  );
+function getMicrolinkUrl(link) {
+  return `https://api.microlink.io/?url=${encodeURIComponent(link)}&screenshot=true&meta=false&embed=screenshot.url`;
 }
 
-function ColorPreview({ corFundo, nome }) {
-  const bg = corFundo || '#EDE4D8';
-  return (
-    <div
-      className="h-32 rounded-t-card flex items-center justify-center"
-      style={{ backgroundColor: bg }}
-    >
-      <span
-        className="text-sm font-medium px-3 text-center"
-        style={{ color: isLight(bg) ? '#2C1810' : '#FDFAF5' }}
-      >
-        {nome}
-      </span>
-    </div>
-  );
-}
-
-function isLight(hex) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return (r * 299 + g * 587 + b * 114) / 1000 > 128;
-}
-
-function WireframePreview() {
-  return (
-    <div className="h-32 rounded-t-card bg-cream p-3 flex flex-col gap-1.5">
-      <div className="h-3 bg-border rounded w-3/4" />
-      <div className="flex gap-1.5 flex-1">
-        <div className="w-16 bg-border rounded" />
-        <div className="flex-1 flex flex-col gap-1.5">
-          <div className="h-4 bg-border rounded" />
-          <div className="h-4 bg-border rounded w-5/6" />
-          <div className="h-4 bg-border rounded w-4/6" />
+function ScreenshotPreview({ reference }) {
+  const imgSrc = reference.screenshotUrl || (reference.link ? getMicrolinkUrl(reference.link) : null);
+  if (imgSrc) {
+    return (
+      <div className="h-32 rounded-t-card overflow-hidden bg-cream relative">
+        <img
+          src={imgSrc}
+          alt={reference.nome}
+          className="w-full h-full object-cover"
+          onError={e => {
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'flex';
+          }}
+        />
+        <div
+          className="absolute inset-0 items-center justify-center hidden"
+          style={{ backgroundColor: reference.corFundo || '#EDE4D8' }}
+        >
+          <span className="text-sm font-medium px-3 text-center text-dark">{reference.nome}</span>
         </div>
       </div>
-    </div>
-  );
-}
-
-function ToolPreview({ corFundo, nome }) {
-  const bg = corFundo || '#2C1810';
+    );
+  }
   return (
     <div
       className="h-32 rounded-t-card flex items-center justify-center"
-      style={{ backgroundColor: bg }}
+      style={{ backgroundColor: reference.corFundo || '#EDE4D8' }}
     >
-      <span
-        className="text-lg font-medium tracking-tight"
-        style={{ color: isLight(bg) ? '#2C1810' : '#FDFAF5' }}
-      >
-        {nome}
-      </span>
+      <span className="text-sm font-medium px-3 text-center text-dark">{reference.nome}</span>
     </div>
   );
-}
-
-function Preview({ reference }) {
-  const cat = reference.subcategoria || reference.categoria;
-  if (cat === 'tipografia') return <TypographyPreview nome={reference.nome} />;
-  if (cat === 'layout') return <WireframePreview />;
-  if (cat === 'ferramentas' || cat === 'sites' || reference.categoria === 'infraestrutura') {
-    return <ToolPreview corFundo={reference.corFundo} nome={reference.nome} />;
-  }
-  return <ColorPreview corFundo={reference.corFundo} nome={reference.nome} />;
 }
 
 export default function ReferenceCard({ reference, onEdit, onDelete }) {
+  const projectCount = reference.projects?.length || 0;
+
   return (
     <div className="bg-surface border border-border rounded-card overflow-hidden hover:shadow-sm transition-shadow group">
-      <Preview reference={reference} />
+      <ScreenshotPreview reference={reference} />
+
       <div className="p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -97,32 +53,51 @@ export default function ReferenceCard({ reference, onEdit, onDelete }) {
                 href={reference.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
+                onClick={e => e.stopPropagation()}
                 className="text-[11px] text-caramel hover:underline truncate block"
               >
-                {new URL(reference.link).hostname}
+                {(() => { try { return new URL(reference.link).hostname; } catch { return reference.link; } })()}
               </a>
             )}
           </div>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            {reference.link && (
+              <a href={reference.link} target="_blank" rel="noopener noreferrer" className="p-1 text-faint hover:text-caramel transition-colors">
+                <IconExternalLink size={14} />
+              </a>
+            )}
             {onEdit && (
-              <button
-                onClick={() => onEdit(reference)}
-                className="p-1 text-faint hover:text-terra transition-colors"
-              >
-                <IconPencil size={16} />
+              <button onClick={() => onEdit(reference)} className="p-1 text-faint hover:text-terra transition-colors">
+                <IconPencil size={14} />
               </button>
             )}
             {onDelete && (
-              <button
-                onClick={() => onDelete(reference.id)}
-                className="p-1 text-faint hover:text-red-500 transition-colors"
-              >
-                <IconTrash size={16} />
+              <button onClick={() => onDelete(reference.id)} className="p-1 text-faint hover:text-red-500 transition-colors">
+                <IconTrash size={14} />
               </button>
             )}
           </div>
         </div>
+
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          {reference.subcategoria && (
+            <span className="text-[10px] px-2 py-0.5 bg-cream border border-border rounded-full text-faint">
+              {reference.subcategoria}
+            </span>
+          )}
+          {(reference.tags || []).map((tag, i) => (
+            <span key={i} className="text-[10px] px-2 py-0.5 bg-[#F0E8DC] border border-[#E0D8CC] rounded-full text-muted">
+              {tag}
+            </span>
+          ))}
+          {projectCount > 0 && (
+            <span className="flex items-center gap-1 text-[10px] text-faint ml-auto">
+              <IconBookmark size={10} className="text-caramel" />
+              {projectCount}
+            </span>
+          )}
+        </div>
+
         {reference.anotacoes && (
           <p className="text-[11px] text-faint mt-1.5 line-clamp-2">{reference.anotacoes}</p>
         )}

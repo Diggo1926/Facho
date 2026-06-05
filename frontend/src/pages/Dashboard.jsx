@@ -4,7 +4,7 @@ import api from '../services/api.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
 import NewProjectModal from './NewProjectModal.jsx';
 import {
-  IconLoader2, IconPalette, IconShieldLock, IconServer, IconCode, IconMessageBolt,
+  IconLoader2, IconPalette, IconShieldLock, IconServer, IconCode, IconMessageBolt, IconExternalLink,
 } from '@tabler/icons-react';
 
 const CATS = ['design', 'seguranca', 'infraestrutura', 'codigo', 'prompts'];
@@ -16,8 +16,74 @@ const CAT_ICON_COMPONENTS = {
   prompts: IconMessageBolt,
 };
 
+function dailySeed() {
+  const s = new Date().toDateString();
+  return s.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+}
+
+function seededShuffle(arr, seed) {
+  const a = [...arr];
+  let s = seed;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    const j = Math.abs(s) % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function getMicrolinkUrl(link) {
+  return `https://api.microlink.io/?url=${encodeURIComponent(link)}&screenshot=true&meta=false&embed=screenshot.url`;
+}
+
+function InspiracaoCard({ reference }) {
+  const imgSrc = reference.screenshotUrl || (reference.link ? getMicrolinkUrl(reference.link) : null);
+  return (
+    <div className="bg-surface border border-border rounded-card overflow-hidden hover:shadow-md transition-shadow group">
+      <div className="h-40 overflow-hidden relative bg-cream">
+        {imgSrc ? (
+          <img
+            src={imgSrc}
+            alt={reference.nome}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={e => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <div
+          className={`${imgSrc ? 'hidden' : 'flex'} absolute inset-0 items-center justify-center`}
+          style={{ backgroundColor: reference.corFundo || '#EDE4D8' }}
+        >
+          <span className="text-sm font-medium px-4 text-center text-dark">{reference.nome}</span>
+        </div>
+      </div>
+      <div className="p-3">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-sm font-medium text-dark">{reference.nome}</p>
+            {reference.subcategoria && (
+              <span className="text-[10px] text-faint">{reference.subcategoria}</span>
+            )}
+          </div>
+          {reference.link && (
+            <a href={reference.link} target="_blank" rel="noopener noreferrer" className="text-faint hover:text-terra opacity-0 group-hover:opacity-100 transition-opacity">
+              <IconExternalLink size={14} />
+            </a>
+          )}
+        </div>
+        {reference.anotacoes && (
+          <p className="text-[11px] text-faint mt-1.5 line-clamp-2">{reference.anotacoes}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [projects, setProjects] = useState([]);
+  const [refs, setRefs] = useState([]);
   const [refCounts, setRefCounts] = useState({});
   const [showNew, setShowNew] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -31,6 +97,7 @@ export default function Dashboard() {
         api.get('/api/references'),
       ]);
       setProjects(projRes.data);
+      setRefs(refRes.data);
 
       const counts = {};
       for (const cat of CATS) {
@@ -46,6 +113,10 @@ export default function Dashboard() {
 
   const activeProject = projects.find((p) => p.status === 'andamento');
   const otherProjects = projects.filter((p) => p.id !== activeProject?.id);
+
+  const inspiracao = refs.length >= 3
+    ? seededShuffle(refs, dailySeed()).slice(0, 3)
+    : refs;
 
   if (loading) {
     return (
@@ -68,7 +139,6 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-medium text-muted uppercase tracking-widest">projetos em andamento</h2>
         </div>
-
         <div
           className="grid gap-3"
           style={{
@@ -77,9 +147,7 @@ export default function Dashboard() {
               : 'repeat(4, 1fr)',
           }}
         >
-          {activeProject && (
-            <ProjectCard project={activeProject} isActive />
-          )}
+          {activeProject && <ProjectCard project={activeProject} isActive />}
           {otherProjects.slice(0, activeProject ? 2 : 3).map((p) => (
             <ProjectCard key={p.id} project={p} />
           ))}
@@ -110,6 +178,22 @@ export default function Dashboard() {
           })}
         </div>
       </section>
+
+      {inspiracao.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="text-xs font-medium text-muted uppercase tracking-widest">inspiração do dia</h2>
+              <p className="text-[10px] text-faint mt-0.5">renova todo dia</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {inspiracao.map((ref) => (
+              <InspiracaoCard key={ref.id} reference={ref} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {showNew && (
         <NewProjectModal
