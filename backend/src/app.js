@@ -9,6 +9,7 @@ import referenceRoutes from './routes/references.js';
 import preferenceRoutes from './routes/preferences.js';
 
 const app = express();
+app.set('trust proxy', 1);
 
 const corsOrigin = process.env.CORS_ORIGIN;
 if (!corsOrigin) {
