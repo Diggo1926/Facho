@@ -4,7 +4,8 @@ import api from '../services/api.jsx';
 import PhaseView from '../components/PhaseView.jsx';
 import ContextExporter from '../components/ContextExporter.jsx';
 import LinkReferenceModal from './LinkReferenceModal.jsx';
-import { IconLoader2, IconArrowLeft, IconLink, IconBolt, IconPhoto, IconExternalLink, IconX, IconFileText, IconHistory, IconPlus, IconTemplate } from '@tabler/icons-react';
+import { IconLoader2, IconArrowLeft, IconLink, IconBolt, IconPhoto, IconExternalLink, IconX, IconFileText, IconHistory, IconPlus, IconTemplate, IconPencil, IconTrash, IconAlertTriangle } from '@tabler/icons-react';
+import EditProjectModal from './EditProjectModal.jsx';
 
 const PHASE_NAMES = ['Ideia', 'Arquitetura', 'Design', 'Segurança', 'Desenvolvimento', 'Testes', 'Deploy', 'Entrega'];
 const PHASE_SHORT = ['Ideia', 'Arq', 'Design', 'Seg', 'Dev', 'Testes', 'Deploy', 'Entrega'];
@@ -261,6 +262,9 @@ export default function Projeto() {
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [nomeTemplate, setNomeTemplate] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -295,6 +299,17 @@ export default function Projeto() {
       alert('Erro ao gerar proposta.');
     } finally {
       setGerandoProposta(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await api.delete(`/api/projects/${id}`);
+      navigate('/projetos');
+    } catch {
+      alert('Erro ao excluir projeto.');
+      setDeleting(false);
     }
   }
 
@@ -335,6 +350,23 @@ export default function Projeto() {
             {project.status === 'concluido' && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#E8F0DC] text-[#4A6A1F] font-medium">concluído</span>
             )}
+            {project.status === 'pausado' && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#EDE4D8] text-[#8B5A2B] font-medium">pausado</span>
+            )}
+            <button
+              onClick={() => setShowEdit(true)}
+              className="p-1 rounded-btn text-faint hover:text-terra hover:bg-cream transition-colors"
+              title="editar projeto"
+            >
+              <IconPencil size={13} />
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-1 rounded-btn text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
+              title="excluir projeto"
+            >
+              <IconTrash size={13} />
+            </button>
           </div>
           <p className="text-sm text-faint ml-6">
             {[project.cliente, project.tipo, project.complexidade].filter(Boolean).join(' · ')}
@@ -485,6 +517,49 @@ export default function Projeto() {
           onClose={() => setShowLink(false)}
           onLinked={load}
         />
+      )}
+
+      {showEdit && (
+        <EditProjectModal
+          project={project}
+          onClose={() => setShowEdit(false)}
+          onSaved={() => { setShowEdit(false); load(); }}
+        />
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black opacity-40" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="relative bg-surface border border-border rounded-card shadow-lg w-full max-w-sm z-10 p-6 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <IconAlertTriangle size={20} className="text-red-500 shrink-0 mt-0.5" />
+                <div>
+                  <h2 className="text-sm font-medium text-dark">excluir projeto</h2>
+                  <p className="text-xs text-faint mt-1">
+                    Tem certeza que deseja excluir <strong className="text-dark">{project.nome}</strong>?
+                    Esta ação não pode ser desfeita — todas as fases e referências serão removidas.
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowDeleteConfirm(false)} className="text-faint hover:text-dark shrink-0">
+                <IconX size={16} />
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 rounded-btn text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-60"
+              >
+                {deleting ? 'excluindo...' : 'excluir projeto'}
+              </button>
+              <button onClick={() => setShowDeleteConfirm(false)} className="btn-secondary text-sm">
+                cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
