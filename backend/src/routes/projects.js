@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { buildContext } from '../services/contextBuilder.js';
+import { generateProposal } from '../services/proposal.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -204,6 +205,126 @@ router.get(
       res.json({ context });
     } catch {
       res.status(500).json({ error: 'Erro ao gerar contexto.' });
+    }
+  }
+);
+
+// POST /api/projects/:id/proposal
+router.post(
+  '/:id/proposal',
+  requireAuth,
+  [param('id').notEmpty()],
+  validate,
+  async (req, res) => {
+    try {
+      const project = await prisma.project.findFirst({
+        where: { id: req.params.id, userId: req.userId },
+        include: { phases: { orderBy: { numero: 'asc' } } },
+      });
+
+      if (!project) return res.status(404).json({ error: 'Projeto não encontrado.' });
+
+      const pdf = await generateProposal(project, project.phases);
+
+      const filename = `proposta-${project.nome.toLowerCase().replace(/ /g, '-')}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(pdf);
+    } catch (err) {
+      console.error('Proposal error:', err.message);
+      res.status(500).json({ error: 'Erro ao gerar proposta.' });
+    }
+  }
+);
+
+// POST /api/projects/:id/sessions
+router.post(
+  '/:id/sessions',
+  requireAuth,
+  [param('id').notEmpty(), body('resumo').optional().trim()],
+  validate,
+  async (req, res) => {
+    try {
+      const project = await prisma.project.findFirst({
+        where: { id: req.params.id, userId: req.userId },
+      });
+      if (!project) return res.status(404).json({ error: 'Projeto não encontrado.' });
+
+      const session = await prisma.sessionLog.create({
+        data: {
+          projectId: project.id,
+          resumo: req.body.resumo || `Sessão — ${new Date().toLocaleDateString('pt-BR')}`,
+          contextoExportado: req.body.contextoExportado ?? false,
+        },
+      });
+
+      res.json(session);
+    } catch {
+      res.status(500).json({ error: 'Erro ao criar sessão.' });
+    }
+  }
+);
+
+// GET /api/projects/:id/sessions
+router.get(
+  '/:id/sessions',
+  requireAuth,
+  [param('id').notEmpty()],
+  validate,
+  async (req, res) => {
+    try {
+      const project = await prisma.project.findFirst({
+        where: { id: req.params.id, userId: req.userId },
+      });
+      if (!project) return res.status(404).json({ error: 'Projeto não encontrado.' });
+
+      const sessions = await prisma.sessionLog.findMany({
+        where: { projectId: req.params.id },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
+
+      res.json(sessions);
+    } catch {
+      res.status(500).json({ error: 'Erro ao listar sessões.' });
+    }
+  }
+);
+
+// POST /api/projects/:id/save-as-template
+router.post(
+  '/:id/save-as-template',
+  requireAuth,
+  [param('id').notEmpty(), body('nomeTemplate').optional().trim()],
+  validate,
+  async (req, res) => {
+    try {
+      const project = await prisma.project.findFirst({
+        where: { id: req.params.id, userId: req.userId },
+        include: { phases: { orderBy: { numero: 'asc' } } },
+      });
+      if (!project) return res.status(404).json({ error: 'Projeto não encontrado.' });
+
+      const faseData = {};
+      for (const phase of project.phases) {
+        faseData[`fase${phase.numero}`] = phase.resultado;
+      }
+
+      const template = await prisma.projectTemplate.create({
+        data: {
+          userId: req.userId,
+          nome: req.body.nomeTemplate || `Template — ${project.nome}`,
+          tipo: project.tipo || '',
+          complexidade: project.complexidade,
+          descricao: project.descricao,
+          icone: project.icone,
+          ...faseData,
+        },
+      });
+
+      res.json(template);
+    } catch {
+      res.status(500).json({ error: 'Erro ao salvar template.' });
     }
   }
 );

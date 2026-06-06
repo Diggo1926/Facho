@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  id            String        @id @default(cuid())
-  email         String        @unique
+  id            String             @id @default(cuid())
+  email         String             @unique
   password      String
   name          String
-  createdAt     DateTime      @default(now())
+  createdAt     DateTime           @default(now())
   projects      Project[]
   references    Reference[]
   preferences   Preferences?
   refreshTokens RefreshToken[]
+  templates     ProjectTemplate[]
 }
 
 model Project {
@@ -35,6 +36,7 @@ model Project {
   updatedAt    DateTime           @updatedAt
   phases       Phase[]
   references   ProjectReference[]
+  sessionLogs  SessionLog[]
 }
 
 model Phase {
@@ -98,4 +100,33 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+model SessionLog {
+  id                String   @id @default(cuid())
+  projectId         String
+  project           Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  resumo            String
+  contextoExportado Boolean  @default(false)
+  createdAt         DateTime @default(now())
+}
+
+model ProjectTemplate {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nome         String
+  tipo         String
+  complexidade String?
+  descricao    String?
+  icone        String?
+  fase1        Json?
+  fase2        Json?
+  fase3        Json?
+  fase4        Json?
+  fase5        Json?
+  fase6        Json?
+  fase7        Json?
+  fase8        Json?
+  createdAt    DateTime @default(now())
 }

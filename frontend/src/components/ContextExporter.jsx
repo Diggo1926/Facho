@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api.jsx';
 import { IconX, IconLoader2, IconCheck, IconCopy } from '@tabler/icons-react';
 
-export default function ContextExporter({ projectId, open, onClose }) {
+export default function ContextExporter({ projectId, project, open, onClose }) {
   const [context, setContext] = useState('');
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -22,6 +22,13 @@ export default function ContextExporter({ projectId, open, onClose }) {
     await navigator.clipboard.writeText(context);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+
+    try {
+      const dataHoje = new Date().toLocaleDateString('pt-BR');
+      const faseAtual = project?.phases?.find(p => p.numero === project?.currentPhase);
+      const resumo = `Sessão de ${dataHoje} — ${faseAtual?.nome || ('Fase ' + (project?.currentPhase || 1))}`;
+      await api.post(`/api/projects/${projectId}/sessions`, { resumo, contextoExportado: true });
+    } catch {}
   }
 
   if (!open) return null;

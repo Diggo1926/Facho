@@ -8,6 +8,7 @@ import Projeto from './pages/Projeto.jsx';
 import Biblioteca from './pages/Biblioteca.jsx';
 import Categoria from './pages/Categoria.jsx';
 import Preferencias from './pages/Preferencias.jsx';
+import Templates from './pages/Templates.jsx';
 
 function PrivateRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="biblioteca" element={<Biblioteca />} />
           <Route path="biblioteca/:categoria" element={<Categoria />} />
           <Route path="preferencias" element={<Preferencias />} />
+          <Route path="templates" element={<Templates />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

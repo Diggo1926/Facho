@@ -200,6 +200,88 @@ async function main() {
     await prisma.reference.create({ data: { userId: user.id, ...ref } });
   }
 
+  // Templates padrão
+  const templatesDefault = [
+    {
+      id: 'loja-moda_default',
+      nome: 'Loja de Moda',
+      tipo: 'E-commerce',
+      complexidade: 'media',
+      descricao: 'Sistema de gestão para loja de moda com caixa, estoque e relatórios.',
+      fase2: {
+        stack: { frontend: 'React + Vite + Tailwind CSS', backend: 'Node.js + Express + Prisma', banco: 'PostgreSQL (Railway)', deploy: 'Vercel + Railway' },
+        modulos: [
+          { nome: 'Caixa', descricao: 'Registro de vendas e fechamento do dia', funcionalidades: ['Múltiplas formas de pagamento', 'Troco automático', 'Fechamento do dia'] },
+          { nome: 'Estoque', descricao: 'Cadastro e controle de produtos', funcionalidades: ['Upload de foto', 'Alertas de estoque baixo', 'Código de produto'] },
+          { nome: 'Relatório', descricao: 'Faturamento e análises', funcionalidades: ['Faturamento por período', 'Breakdown por pagamento', 'Exportação PDF'] },
+        ],
+      },
+      fase4: {
+        nivelRisco: 'medio',
+        checklist: {
+          autenticacao: [{ item: 'JWT implementado', feito: false }, { item: 'Refresh token', feito: false }, { item: 'Senhas hasheadas', feito: false }],
+          cors: [{ item: 'CORS restrito', feito: false }, { item: 'Helmet.js', feito: false }],
+          banco: [{ item: 'Queries via ORM', feito: false }, { item: 'SSL no banco', feito: false }],
+        },
+      },
+    },
+    {
+      id: 'crm_default',
+      nome: 'Sistema de Gestão (CRM)',
+      tipo: 'CRM',
+      complexidade: 'media',
+      descricao: 'Sistema de gestão de clientes com cadastro, histórico e comunicação.',
+      fase2: {
+        stack: { frontend: 'React + Vite + Tailwind CSS', backend: 'Node.js + Express + Prisma', banco: 'PostgreSQL (Railway)', deploy: 'Vercel + Railway' },
+        modulos: [
+          { nome: 'Clientes', descricao: 'Cadastro e gestão de clientes', funcionalidades: ['Cadastro completo', 'Histórico de compras', 'Controle de fiado'] },
+          { nome: 'Comunicação', descricao: 'Envio de mensagens', funcionalidades: ['WhatsApp', 'Histórico de contatos'] },
+          { nome: 'Relatórios', descricao: 'Análise de clientes', funcionalidades: ['Clientes por período', 'Top compradores'] },
+        ],
+      },
+    },
+    {
+      id: 'landing-page_default',
+      nome: 'Landing Page',
+      tipo: 'Landing Page',
+      complexidade: 'baixa',
+      descricao: 'Site institucional ou de apresentação de produto/serviço.',
+      fase2: {
+        stack: { frontend: 'Next.js + Tailwind CSS', backend: 'Não necessário', banco: 'Não necessário', deploy: 'Vercel' },
+        modulos: [
+          { nome: 'Hero', descricao: 'Seção principal com CTA', funcionalidades: ['Headline', 'CTA principal', 'Imagem/vídeo'] },
+          { nome: 'Sobre', descricao: 'Apresentação do negócio', funcionalidades: ['Texto', 'Fotos'] },
+          { nome: 'Contato', descricao: 'Formulário de contato', funcionalidades: ['WhatsApp', 'E-mail', 'Mapa'] },
+        ],
+      },
+    },
+    {
+      id: 'financeiro_default',
+      nome: 'Sistema Financeiro',
+      tipo: 'Financeiro',
+      complexidade: 'alta',
+      descricao: 'Sistema de controle financeiro com entradas, saídas e relatórios.',
+      fase2: {
+        stack: { frontend: 'React + Vite + Tailwind CSS', backend: 'Node.js + Express + Prisma', banco: 'PostgreSQL (Railway)', deploy: 'Vercel + Railway' },
+        modulos: [
+          { nome: 'Entradas', descricao: 'Registro de receitas', funcionalidades: ['Categorias', 'Recorrência', 'Comprovantes'] },
+          { nome: 'Saídas', descricao: 'Registro de despesas', funcionalidades: ['Categorias', 'Recorrência', 'Comprovantes'] },
+          { nome: 'Dashboard', descricao: 'Visão geral financeira', funcionalidades: ['Saldo atual', 'Gráficos', 'Projeções'] },
+          { nome: 'Relatórios', descricao: 'Análises detalhadas', funcionalidades: ['Por período', 'Por categoria', 'Exportação'] },
+        ],
+      },
+    },
+  ];
+
+  for (const t of templatesDefault) {
+    const { id, ...data } = t;
+    await prisma.projectTemplate.upsert({
+      where: { id },
+      update: {},
+      create: { id, userId: user.id, ...data },
+    });
+  }
+
   console.log('✓ Seed concluído com sucesso.');
   console.log(`  Usuário: rodrigomamedecarvalho@gmail.com`);
   console.log(`  Projetos: RM Modas, Eloana Velluto, Feira Certa`);

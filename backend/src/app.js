@@ -7,6 +7,7 @@ import projectRoutes from './routes/projects.js';
 import phaseRoutes from './routes/phases.js';
 import referenceRoutes from './routes/references.js';
 import preferenceRoutes from './routes/preferences.js';
+import templateRoutes from './routes/templates.js';
 
 console.log('Iniciando Facho backend...');
 
@@ -67,6 +68,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/phases', phaseRoutes);
 app.use('/api/references', referenceRoutes);
 app.use('/api/preferences', preferenceRoutes);
+app.use('/api/templates', templateRoutes);
 
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
