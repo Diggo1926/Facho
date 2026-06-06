@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react';
 import api from '../services/api.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
 import NewProjectModal from './NewProjectModal.jsx';
-import { IconLoader2, IconPlus, IconFolders } from '@tabler/icons-react';
+import EditProjectModal from './EditProjectModal.jsx';
+import { IconLoader2, IconPlus, IconFolders, IconAlertTriangle, IconX } from '@tabler/icons-react';
 
 export default function Projetos() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
+  const [deletingProject, setDeletingProject] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -16,6 +20,20 @@ export default function Projetos() {
       setProjects(data);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!deletingProject) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/api/projects/${deletingProject.id}`);
+      setDeletingProject(null);
+      load();
+    } catch {
+      alert('Erro ao excluir projeto.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -62,9 +80,21 @@ export default function Projetos() {
               : 'repeat(4, 1fr)',
           }}
         >
-          {active && <ProjectCard project={active} isActive />}
+          {active && (
+            <ProjectCard
+              project={active}
+              isActive
+              onEdit={setEditingProject}
+              onDelete={setDeletingProject}
+            />
+          )}
           {others.map((p) => (
-            <ProjectCard key={p.id} project={p} />
+            <ProjectCard
+              key={p.id}
+              project={p}
+              onEdit={setEditingProject}
+              onDelete={setDeletingProject}
+            />
           ))}
           <ProjectCard isNew onCreate={() => setShowNew(true)} />
         </div>
@@ -75,6 +105,49 @@ export default function Projetos() {
           onClose={() => setShowNew(false)}
           onCreated={() => { setShowNew(false); load(); }}
         />
+      )}
+
+      {editingProject && (
+        <EditProjectModal
+          project={editingProject}
+          onClose={() => setEditingProject(null)}
+          onSaved={() => { setEditingProject(null); load(); }}
+        />
+      )}
+
+      {deletingProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black opacity-40" onClick={() => setDeletingProject(null)} />
+          <div className="relative bg-surface border border-border rounded-card shadow-lg w-full max-w-sm z-10 p-6 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <IconAlertTriangle size={20} className="text-red-500 shrink-0 mt-0.5" />
+                <div>
+                  <h2 className="text-sm font-medium text-dark">excluir projeto</h2>
+                  <p className="text-xs text-faint mt-1">
+                    Tem certeza que deseja excluir <strong className="text-dark">{deletingProject.nome}</strong>?
+                    Esta ação não pode ser desfeita — todas as fases e referências serão removidas.
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setDeletingProject(null)} className="text-faint hover:text-dark shrink-0">
+                <IconX size={16} />
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 rounded-btn text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-60"
+              >
+                {deleting ? 'excluindo...' : 'excluir projeto'}
+              </button>
+              <button onClick={() => setDeletingProject(null)} className="btn-secondary text-sm">
+                cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

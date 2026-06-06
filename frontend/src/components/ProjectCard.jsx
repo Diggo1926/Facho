@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import {
   IconShoppingBag, IconHanger, IconUsers, IconBasket,
-  IconDeviceLaptop, IconBuilding, IconPlus,
+  IconDeviceLaptop, IconBuilding, IconPlus, IconPencil, IconTrash,
 } from '@tabler/icons-react';
 
 const TYPE_ICONS = {
@@ -78,7 +78,7 @@ function formatDate(date) {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
-export default function ProjectCard({ project, isActive = false, isNew = false, onCreate }) {
+export default function ProjectCard({ project, isActive = false, isNew = false, onCreate, onEdit, onDelete }) {
   const navigate = useNavigate();
 
   if (isNew) {
@@ -99,46 +99,66 @@ export default function ProjectCard({ project, isActive = false, isNew = false, 
   const IconComp = ICON_COMPONENTS[iconKey] || IconDeviceLaptop;
 
   return (
-    <button
-      onClick={() => navigate(`/projeto/${project.id}`)}
-      className={`flex flex-col gap-2.5 p-4 rounded-card text-left transition-all hover:shadow-sm ${
-        isActive
-          ? 'border border-gold bg-surface shadow-sm'
-          : 'border border-[#E0D8CC] bg-surface'
-      }`}
-      style={{ borderWidth: isActive ? '1px' : '0.5px' }}
-    >
-      {isActive && (
-        <span className="text-[9px] font-medium text-caramel uppercase tracking-[0.12em]">
-          ativo
-        </span>
-      )}
+    <div className="relative group">
+      <button
+        onClick={() => navigate(`/projeto/${project.id}`)}
+        className={`w-full flex flex-col gap-2.5 p-4 rounded-card text-left transition-all hover:shadow-sm ${
+          isActive
+            ? 'border border-gold bg-surface shadow-sm'
+            : 'border border-[#E0D8CC] bg-surface'
+        }`}
+        style={{ borderWidth: isActive ? '1px' : '0.5px' }}
+      >
+        {isActive && (
+          <span className="text-[9px] font-medium text-caramel uppercase tracking-[0.12em]">
+            ativo
+          </span>
+        )}
 
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <IconComp size={isActive ? 36 : 32} className="text-terra" />
-          <div>
-            <p
-              className="text-dark font-medium leading-tight"
-              style={{ fontSize: isActive ? '14px' : '13px' }}
-            >
-              {project.nome}
-            </p>
-            {(project.cliente || project.tipo) && (
-              <p className="text-[11px] text-faint mt-0.5">
-                {[project.cliente, project.tipo].filter(Boolean).join(' · ')}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <IconComp size={isActive ? 36 : 32} className="text-terra" />
+            <div>
+              <p
+                className="text-dark font-medium leading-tight"
+                style={{ fontSize: isActive ? '14px' : '13px' }}
+              >
+                {project.nome}
               </p>
-            )}
+              {(project.cliente || project.tipo) && (
+                <p className="text-[11px] text-faint mt-0.5">
+                  {[project.cliente, project.tipo].filter(Boolean).join(' · ')}
+                </p>
+              )}
+            </div>
           </div>
+          <StatusBadge status={project.status} />
         </div>
-        <StatusBadge status={project.status} />
+
+        <PhasePips currentPhase={project.currentPhase} />
+
+        <p className="text-[10px] text-[#C9BFB0]">
+          atualizado {formatDate(project.updatedAt)}
+        </p>
+      </button>
+
+      {/* ações: aparecem no hover */}
+      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => { e.stopPropagation(); onEdit?.(project); }}
+          className="p-1.5 rounded-btn bg-surface border border-border text-faint hover:text-terra hover:border-terra transition-colors shadow-sm"
+          title="editar"
+        >
+          <IconPencil size={13} />
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete?.(project); }}
+          className="p-1.5 rounded-btn bg-surface border border-border text-faint hover:text-red-500 hover:border-red-300 transition-colors shadow-sm"
+          title="excluir"
+        >
+          <IconTrash size={13} />
+        </button>
       </div>
-
-      <PhasePips currentPhase={project.currentPhase} />
-
-      <p className="text-[10px] text-[#C9BFB0]">
-        atualizado {formatDate(project.updatedAt)}
-      </p>
-    </button>
+    </div>
   );
 }
