@@ -111,43 +111,46 @@ export default function Categoria() {
         </button>
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative">
+      {/* Filtros: busca + subcategorias em scroll horizontal */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div className="relative shrink-0">
           <IconSearch size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input
             type="text"
             placeholder="buscar..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 pr-4 py-1.5 text-sm border border-border rounded-btn bg-surface focus:outline-none focus:border-terra transition-colors w-48"
+            className="pl-8 pr-4 py-1.5 text-sm border border-border rounded-btn bg-surface focus:outline-none focus:border-terra transition-colors w-full sm:w-48"
           />
         </div>
 
-        <div className="flex gap-1.5 flex-wrap">
-          <button
-            onClick={() => setActiveSubcat(null)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              !activeSubcat
-                ? 'bg-terra text-white'
-                : 'border border-border text-muted hover:border-terra hover:text-terra'
-            }`}
-          >
-            todas
-          </button>
-          {subcats.map((sub) => (
+        {subcats.length > 0 && (
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scroll-mobile sm:flex-wrap sm:overflow-visible sm:pb-0">
             <button
-              key={sub}
-              onClick={() => setActiveSubcat(activeSubcat === sub ? null : sub)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                activeSubcat === sub
+              onClick={() => setActiveSubcat(null)}
+              className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                !activeSubcat
                   ? 'bg-terra text-white'
                   : 'border border-border text-muted hover:border-terra hover:text-terra'
               }`}
             >
-              {sub}
+              todas
             </button>
-          ))}
-        </div>
+            {subcats.map((sub) => (
+              <button
+                key={sub}
+                onClick={() => setActiveSubcat(activeSubcat === sub ? null : sub)}
+                className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  activeSubcat === sub
+                    ? 'bg-terra text-white'
+                    : 'border border-border text-muted hover:border-terra hover:text-terra'
+                }`}
+              >
+                {sub}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -166,7 +169,7 @@ export default function Categoria() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {filtered.map((ref) => (
             <ReferenceCard
               key={ref.id}

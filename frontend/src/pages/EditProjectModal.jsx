@@ -41,12 +41,12 @@ export default function EditProjectModal({ project, onClose, onSaved }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-      <div className="absolute inset-0 bg-black opacity-40" onClick={onClose} />
-      <div className="relative bg-surface border border-border rounded-card shadow-lg w-full max-w-lg max-h-[90vh] flex flex-col z-10">
+    <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center md:p-6">
+      <div className="absolute inset-0 bg-black/40 hidden md:block" onClick={onClose} />
+      <div className="relative bg-surface border-0 md:border border-border md:rounded-card shadow-lg w-full h-full md:h-auto md:max-h-[90vh] md:max-w-lg flex flex-col z-10">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <h2 className="text-sm font-medium text-dark">editar projeto</h2>
-          <button onClick={onClose} className="text-faint hover:text-dark transition-colors">
+          <button onClick={onClose} className="text-faint hover:text-dark transition-colors p-1">
             <IconX size={18} />
           </button>
         </div>
@@ -102,7 +102,7 @@ export default function EditProjectModal({ project, onClose, onSaved }) {
             </p>
           )}
 
-          <div className="flex gap-3 pt-1">
+          <div className="flex gap-3 pt-1 pb-2">
             <button type="button" onClick={onClose} className="btn-secondary flex-1" disabled={saving}>
               cancelar
             </button>

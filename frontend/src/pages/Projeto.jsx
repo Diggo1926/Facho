@@ -1,11 +1,16 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api.jsx';
 import PhaseView from '../components/PhaseView.jsx';
 import ContextExporter from '../components/ContextExporter.jsx';
 import LinkReferenceModal from './LinkReferenceModal.jsx';
-import { IconLoader2, IconArrowLeft, IconLink, IconBolt, IconPhoto, IconExternalLink, IconX, IconFileText, IconHistory, IconPlus, IconTemplate, IconPencil, IconTrash, IconAlertTriangle } from '@tabler/icons-react';
 import EditProjectModal from './EditProjectModal.jsx';
+import { useIsMobile } from '../hooks/useIsMobile.js';
+import {
+  IconLoader2, IconArrowLeft, IconLink, IconBolt, IconPhoto, IconExternalLink, IconX,
+  IconFileText, IconHistory, IconPlus, IconTemplate, IconPencil, IconTrash,
+  IconAlertTriangle, IconDotsVertical,
+} from '@tabler/icons-react';
 
 const PHASE_NAMES = ['Ideia', 'Arquitetura', 'Design', 'Segurança', 'Desenvolvimento', 'Testes', 'Deploy', 'Entrega'];
 const PHASE_SHORT = ['Ideia', 'Arq', 'Design', 'Seg', 'Dev', 'Testes', 'Deploy', 'Entrega'];
@@ -23,7 +28,7 @@ function PhasePip({ phase, isOpen, onClick }) {
     <button
       onClick={onClick}
       disabled={blocked && phase.numero > 1}
-      className={`flex flex-col items-center gap-1 px-2 py-2 rounded-btn transition-all ${
+      className={`flex flex-col items-center gap-1 px-2 py-2 rounded-btn transition-all shrink-0 ${
         blocked && phase.numero > 1 ? 'opacity-40 cursor-not-allowed' : 'hover:opacity-80'
       } ${isOpen ? 'ring-1 ring-[#C17A3A]' : ''}`}
       style={{ backgroundColor: bg, borderColor: border, borderWidth: '1px', borderStyle: 'solid' }}
@@ -55,11 +60,12 @@ function MoodBoard({ project, onLinkRef }) {
       {paleta.length > 0 && (
         <div>
           <p className="text-xs font-medium text-muted mb-3">paleta do projeto</p>
-          <div className="flex gap-4 flex-wrap">
+          {/* Scroll horizontal no mobile, flex wrap no desktop */}
+          <div className="flex gap-4 overflow-x-auto scroll-mobile pb-2 md:flex-wrap md:overflow-visible md:pb-0">
             {paleta.map((c, i) => (
-              <div key={i} className="flex flex-col items-center gap-1.5">
+              <div key={i} className="flex flex-col items-center gap-1.5 shrink-0 md:shrink">
                 <div
-                  className="w-16 h-16 rounded-xl border border-border shadow-sm"
+                  className="w-14 h-14 rounded-xl border border-border shadow-sm"
                   style={{ backgroundColor: c.hex }}
                 />
                 <span className="text-[10px] text-muted">{c.label}</span>
@@ -90,7 +96,7 @@ function MoodBoard({ project, onLinkRef }) {
         ) : (
           <div
             className="gap-3"
-            style={{ columns: '3 200px' }}
+            style={{ columns: '2 160px' }}
           >
             {vinculadas.map((pr) => {
               const ref = pr.reference;
@@ -252,9 +258,12 @@ function HistoricoTab({ projectId }) {
 export default function Projeto() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const actionsMenuRef = useRef(null);
+
   const [project, setProject] = useState(null);
   const [openPhase, setOpenPhase] = useState(null);
-  const [activeTab, setActiveTab] = useState('pipeline'); // 'pipeline' | 'inspiracao' | 'historico'
+  const [activeTab, setActiveTab] = useState('pipeline');
   const [showContext, setShowContext] = useState(false);
   const [showLink, setShowLink] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -265,6 +274,7 @@ export default function Projeto() {
   const [showEdit, setShowEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -283,7 +293,19 @@ export default function Projeto() {
 
   useEffect(() => { load(); }, [id]); // eslint-disable-line
 
+  // Fecha o menu de ações ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target)) {
+        setShowActionsMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   async function gerarProposta() {
+    setShowActionsMenu(false);
     setGerandoProposta(true);
     try {
       const response = await api.post(`/api/projects/${id}/proposal`, {}, { responseType: 'blob' });
@@ -340,29 +362,30 @@ export default function Projeto() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <button onClick={() => navigate('/projetos')} className="text-faint hover:text-dark transition-colors">
+      {/* Header: título + ações */}
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <button onClick={() => navigate('/projetos')} className="text-faint hover:text-dark transition-colors shrink-0">
               <IconArrowLeft size={16} />
             </button>
-            <h1 className="text-base font-medium text-dark">{project.nome}</h1>
+            <h1 className="text-base font-medium text-dark truncate">{project.nome}</h1>
             {project.status === 'concluido' && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#E8F0DC] text-[#4A6A1F] font-medium">concluído</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#E8F0DC] text-[#4A6A1F] font-medium shrink-0">concluído</span>
             )}
             {project.status === 'pausado' && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#EDE4D8] text-[#8B5A2B] font-medium">pausado</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#EDE4D8] text-[#8B5A2B] font-medium shrink-0">pausado</span>
             )}
             <button
               onClick={() => setShowEdit(true)}
-              className="p-1 rounded-btn text-faint hover:text-terra hover:bg-cream transition-colors"
+              className="p-1 rounded-btn text-faint hover:text-terra hover:bg-cream transition-colors shrink-0"
               title="editar projeto"
             >
               <IconPencil size={13} />
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="p-1 rounded-btn text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="p-1 rounded-btn text-faint hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
               title="excluir projeto"
             >
               <IconTrash size={13} />
@@ -373,7 +396,8 @@ export default function Projeto() {
           </p>
         </div>
 
-        <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+        {/* Desktop: botões individuais */}
+        <div className="hidden md:flex gap-2 shrink-0 flex-wrap justify-end">
           <button onClick={() => setShowSaveTemplate(true)} className="btn-secondary flex items-center gap-1.5">
             <IconTemplate size={16} /> salvar template
           </button>
@@ -392,13 +416,57 @@ export default function Projeto() {
             <IconBolt size={16} /> exportar contexto
           </button>
         </div>
+
+        {/* Mobile: botão ⋯ */}
+        <div className="md:hidden relative shrink-0" ref={actionsMenuRef}>
+          <button
+            onClick={() => setShowActionsMenu(v => !v)}
+            className="btn-secondary p-2"
+            aria-label="Ações do projeto"
+          >
+            <IconDotsVertical size={18} />
+          </button>
+          {showActionsMenu && (
+            <div className="absolute right-0 top-11 z-20 bg-surface border border-border rounded-card shadow-lg w-52 py-1">
+              <button
+                onClick={() => { setShowSaveTemplate(true); setShowActionsMenu(false); }}
+                className="w-full text-left px-4 py-3 text-sm text-muted hover:bg-cream flex items-center gap-2.5"
+              >
+                <IconTemplate size={15} className="shrink-0" /> salvar template
+              </button>
+              <button
+                onClick={gerarProposta}
+                disabled={gerandoProposta}
+                className="w-full text-left px-4 py-3 text-sm text-muted hover:bg-cream flex items-center gap-2.5 disabled:opacity-50"
+              >
+                {gerandoProposta
+                  ? <IconLoader2 size={15} className="animate-spin shrink-0" />
+                  : <IconFileText size={15} className="shrink-0" />}
+                {gerandoProposta ? 'gerando...' : 'proposta PDF'}
+              </button>
+              <button
+                onClick={() => { setShowLink(true); setShowActionsMenu(false); }}
+                className="w-full text-left px-4 py-3 text-sm text-muted hover:bg-cream flex items-center gap-2.5"
+              >
+                <IconLink size={15} className="shrink-0" /> vincular ref
+              </button>
+              <div className="border-t border-border my-1" />
+              <button
+                onClick={() => { setShowContext(true); setShowActionsMenu(false); }}
+                className="w-full text-left px-4 py-3 text-sm text-terra hover:bg-cream flex items-center gap-2.5 font-medium"
+              >
+                <IconBolt size={15} className="shrink-0" /> exportar contexto
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* tabs */}
-      <div className="flex gap-1 border-b border-border">
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-border overflow-x-auto scroll-mobile">
         <button
           onClick={() => setActiveTab('pipeline')}
-          className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${
+          className={`shrink-0 px-4 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${
             activeTab === 'pipeline' ? 'border-terra text-terra' : 'border-transparent text-faint hover:text-muted'
           }`}
         >
@@ -406,7 +474,7 @@ export default function Projeto() {
         </button>
         <button
           onClick={() => setActiveTab('inspiracao')}
-          className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
+          className={`shrink-0 px-4 py-2 text-xs font-medium transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
             activeTab === 'inspiracao' ? 'border-terra text-terra' : 'border-transparent text-faint hover:text-muted'
           }`}
         >
@@ -420,7 +488,7 @@ export default function Projeto() {
         </button>
         <button
           onClick={() => setActiveTab('historico')}
-          className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
+          className={`shrink-0 px-4 py-2 text-xs font-medium transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
             activeTab === 'historico' ? 'border-terra text-terra' : 'border-transparent text-faint hover:text-muted'
           }`}
         >
@@ -431,7 +499,8 @@ export default function Projeto() {
 
       {activeTab === 'pipeline' && (
         <>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {/* Fases em scroll horizontal */}
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scroll-mobile">
             {project.phases.map((phase) => (
               <PhasePip
                 key={phase.numero}
@@ -481,12 +550,12 @@ export default function Projeto() {
       <ContextExporter projectId={id} project={project} open={showContext} onClose={() => setShowContext(false)} />
 
       {showSaveTemplate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-black opacity-40" onClick={() => setShowSaveTemplate(false)} />
-          <div className="relative bg-surface border border-border rounded-card shadow-lg w-full max-w-sm z-10 p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center md:p-6">
+          <div className="absolute inset-0 bg-black/40 hidden md:block" onClick={() => setShowSaveTemplate(false)} />
+          <div className="relative bg-surface w-full h-full md:h-auto md:max-w-sm md:rounded-card md:border border-border shadow-lg z-10 p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-medium text-dark">salvar como template</h2>
-              <button onClick={() => setShowSaveTemplate(false)} className="text-faint hover:text-dark">
+              <button onClick={() => setShowSaveTemplate(false)} className="text-faint hover:text-dark p-1">
                 <IconX size={16} />
               </button>
             </div>
@@ -528,7 +597,7 @@ export default function Projeto() {
       )}
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6">
           <div className="absolute inset-0 bg-black opacity-40" onClick={() => setShowDeleteConfirm(false)} />
           <div className="relative bg-surface border border-border rounded-card shadow-lg w-full max-w-sm z-10 p-6 space-y-4">
             <div className="flex items-start justify-between gap-3">

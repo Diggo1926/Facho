@@ -35,3 +35,32 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #E0D8CC; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #C9BFB0; }
+
+/* Mobile: evita zoom automático no iOS ao focar inputs */
+@media (max-width: 767px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="url"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Touch target mínimo para botões principais */
+  .btn-primary,
+  .btn-secondary {
+    min-height: 44px;
+  }
+
+  /* Scroll horizontal sem scrollbar visível */
+  .scroll-mobile {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scroll-mobile::-webkit-scrollbar {
+    display: none;
+  }
+}

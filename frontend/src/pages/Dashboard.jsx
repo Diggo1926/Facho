@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
 import NewProjectModal from './NewProjectModal.jsx';
+import { useIsMobile } from '../hooks/useIsMobile.js';
 import {
   IconLoader2, IconPalette, IconShieldLock, IconServer, IconCode, IconMessageBolt, IconExternalLink,
 } from '@tabler/icons-react';
@@ -88,6 +89,7 @@ export default function Dashboard() {
   const [showNew, setShowNew] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   async function load() {
     setLoading(true);
@@ -140,8 +142,8 @@ export default function Dashboard() {
           <h2 className="text-xs font-medium text-muted uppercase tracking-widest">projetos em andamento</h2>
         </div>
         <div
-          className="grid gap-3"
-          style={{
+          className={isMobile ? 'flex flex-col gap-3' : 'grid gap-3'}
+          style={isMobile ? {} : {
             gridTemplateColumns: activeProject
               ? `1.4fr ${otherProjects.slice(0, 2).map(() => '1fr').join(' ')} 0.8fr`
               : 'repeat(4, 1fr)',
@@ -159,14 +161,15 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-medium text-muted uppercase tracking-widest">biblioteca</h2>
         </div>
-        <div className="grid grid-cols-5 gap-3">
+        {/* Scroll horizontal no mobile, grid 5 colunas no desktop */}
+        <div className="flex gap-3 overflow-x-auto pb-2 scroll-mobile md:grid md:grid-cols-5 md:overflow-visible md:pb-0">
           {CATS.map((cat) => {
             const CatIcon = CAT_ICON_COMPONENTS[cat];
             return (
               <button
                 key={cat}
                 onClick={() => navigate(`/biblioteca/${cat}`)}
-                className="card hover:shadow-sm transition-shadow text-left group"
+                className="card hover:shadow-sm transition-shadow text-left group shrink-0 min-w-[130px] md:min-w-0"
               >
                 <CatIcon size={22} className="text-caramel mb-2" />
                 <p className="text-sm font-medium text-dark capitalize">{cat}</p>
@@ -187,7 +190,7 @@ export default function Dashboard() {
               <p className="text-[10px] text-faint mt-0.5">renova todo dia</p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {inspiracao.map((ref) => (
               <InspiracaoCard key={ref.id} reference={ref} />
             ))}

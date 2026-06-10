@@ -41,7 +41,7 @@ export default function Biblioteca() {
         <p className="text-sm text-faint mt-0.5">{refs.length} referência{refs.length !== 1 ? 's' : ''} no total</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         {CATS.map((cat) => {
           const count = refs.filter((r) => r.categoria === cat.id).length;
           return (

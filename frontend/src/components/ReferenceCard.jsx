@@ -8,7 +8,7 @@ function ScreenshotPreview({ reference }) {
   const imgSrc = reference.screenshotUrl || (reference.link ? getMicrolinkUrl(reference.link) : null);
   if (imgSrc) {
     return (
-      <div className="h-32 rounded-t-card overflow-hidden bg-cream relative">
+      <div className="h-[120px] md:h-32 rounded-t-card overflow-hidden bg-cream relative">
         <img
           src={imgSrc}
           alt={reference.nome}
@@ -29,7 +29,7 @@ function ScreenshotPreview({ reference }) {
   }
   return (
     <div
-      className="h-32 rounded-t-card flex items-center justify-center"
+      className="h-[120px] md:h-32 rounded-t-card flex items-center justify-center"
       style={{ backgroundColor: reference.corFundo || '#EDE4D8' }}
     >
       <span className="text-sm font-medium px-3 text-center text-dark">{reference.nome}</span>
@@ -60,7 +60,8 @@ export default function ReferenceCard({ reference, onEdit, onDelete }) {
               </a>
             )}
           </div>
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          {/* Sempre visível no mobile, hover no desktop */}
+          <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
             {reference.link && (
               <a href={reference.link} target="_blank" rel="noopener noreferrer" className="p-1 text-faint hover:text-caramel transition-colors">
                 <IconExternalLink size={14} />

@@ -3,6 +3,7 @@ import api from '../services/api.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
 import NewProjectModal from './NewProjectModal.jsx';
 import EditProjectModal from './EditProjectModal.jsx';
+import { useIsMobile } from '../hooks/useIsMobile.js';
 import { IconLoader2, IconPlus, IconFolders, IconAlertTriangle, IconX } from '@tabler/icons-react';
 
 export default function Projetos() {
@@ -12,6 +13,7 @@ export default function Projetos() {
   const [editingProject, setEditingProject] = useState(null);
   const [deletingProject, setDeletingProject] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const isMobile = useIsMobile();
 
   async function load() {
     setLoading(true);
@@ -52,12 +54,12 @@ export default function Projetos() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-base font-medium text-dark">projetos</h1>
           <p className="text-sm text-faint mt-0.5">{projects.length} projeto{projects.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={() => setShowNew(true)} className="btn-primary flex items-center gap-2">
+        <button onClick={() => setShowNew(true)} className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto">
           <IconPlus size={16} />
           novo projeto
         </button>
@@ -73,8 +75,8 @@ export default function Projetos() {
         </div>
       ) : (
         <div
-          className="grid gap-3"
-          style={{
+          className={isMobile ? 'flex flex-col gap-3' : 'grid gap-3'}
+          style={isMobile ? {} : {
             gridTemplateColumns: active
               ? `1.4fr ${Array(Math.min(others.length, 2)).fill('1fr').join(' ')} 0.8fr`
               : 'repeat(4, 1fr)',
@@ -116,7 +118,7 @@ export default function Projetos() {
       )}
 
       {deletingProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6">
           <div className="absolute inset-0 bg-black opacity-40" onClick={() => setDeletingProject(null)} />
           <div className="relative bg-surface border border-border rounded-card shadow-lg w-full max-w-sm z-10 p-6 space-y-4">
             <div className="flex items-start justify-between gap-3">

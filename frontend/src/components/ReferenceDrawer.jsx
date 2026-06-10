@@ -62,7 +62,7 @@ export default function ReferenceDrawer({ open, onClose, onSave, initial = null 
         onClick={onClose}
       />
       <div
-        className={`fixed top-0 right-0 h-full w-[300px] bg-surface border-l border-border z-50 flex flex-col shadow-lg transition-transform duration-[250ms] ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-full md:w-[300px] bg-surface border-l border-border z-50 flex flex-col shadow-lg transition-transform duration-[250ms] ease-in-out ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -70,7 +70,7 @@ export default function ReferenceDrawer({ open, onClose, onSave, initial = null 
           <h2 className="text-sm font-medium text-dark">
             {initial ? 'editar referência' : 'nova referência'}
           </h2>
-          <button onClick={onClose} className="text-faint hover:text-dark transition-colors">
+          <button onClick={onClose} className="text-faint hover:text-dark transition-colors p-1">
             <IconX size={18} />
           </button>
         </div>
@@ -156,7 +156,7 @@ export default function ReferenceDrawer({ open, onClose, onSave, initial = null 
             <textarea value={form.anotacoes} onChange={set('anotacoes')} rows={3} className="input-base resize-none" placeholder="observações sobre esta referência..." />
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-2 pb-2">
             <button type="button" onClick={onClose} className="btn-secondary flex-1" disabled={saving}>cancelar</button>
             <button type="submit" className="btn-primary flex-1" disabled={saving}>{saving ? 'salvando...' : 'salvar'}</button>
           </div>
