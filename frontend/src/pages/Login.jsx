@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { IconFlame, IconLoader2 } from '@tabler/icons-react';
+import { IconLoader2 } from '@tabler/icons-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -28,15 +28,21 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-cream flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <IconFlame size={32} className="text-terra" />
-          <span className="text-dark font-medium text-2xl tracking-tight">Facho</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '32px', gap: '12px' }}>
+          <img
+            src="/logo-facho.png"
+            alt="Facho"
+            style={{ width: '64px', height: '64px', mixBlendMode: 'multiply', objectFit: 'contain' }}
+          />
+          <span style={{ fontSize: '28px', fontWeight: '500', color: '#2C1810', fontFamily: 'DM Sans, sans-serif' }}>
+            Facho
+          </span>
+          <span style={{ fontSize: '13px', color: '#A0896E', fontFamily: 'DM Sans, sans-serif' }}>
+            acesse sua base de conhecimento
+          </span>
         </div>
 
         <div className="bg-surface border border-border rounded-card p-6 shadow-sm">
-          <h1 className="text-sm font-medium text-dark mb-5 text-center">
-            acesse sua base de conhecimento
-          </h1>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
