@@ -6,6 +6,7 @@ import ContextExporter from '../components/ContextExporter.jsx';
 import LinkReferenceModal from './LinkReferenceModal.jsx';
 import EditProjectModal from './EditProjectModal.jsx';
 import { useIsMobile } from '../hooks/useIsMobile.js';
+import ContractsTab from '../components/contracts/ContractsTab.jsx';
 import {
   IconLoader2, IconArrowLeft, IconLink, IconBolt, IconPhoto, IconExternalLink, IconX,
   IconFileText, IconHistory, IconPlus, IconTemplate, IconPencil, IconTrash,
@@ -495,6 +496,16 @@ export default function Projeto() {
           <IconHistory size={13} />
           histórico
         </button>
+        <button
+          data-tab="contratos"
+          onClick={() => setActiveTab('contratos')}
+          className={`shrink-0 px-4 py-2 text-xs font-medium transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
+            activeTab === 'contratos' ? 'border-terra text-terra' : 'border-transparent text-faint hover:text-muted'
+          }`}
+        >
+          <IconFileText size={13} />
+          contratos
+        </button>
       </div>
 
       {activeTab === 'pipeline' && (
@@ -545,6 +556,10 @@ export default function Projeto() {
 
       {activeTab === 'historico' && (
         <HistoricoTab projectId={id} />
+      )}
+
+      {activeTab === 'contratos' && (
+        <ContractsTab projectId={id} />
       )}
 
       <ContextExporter projectId={id} project={project} open={showContext} onClose={() => setShowContext(false)} />

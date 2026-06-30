@@ -8,6 +8,8 @@ import phaseRoutes from './routes/phases.js';
 import referenceRoutes from './routes/references.js';
 import preferenceRoutes from './routes/preferences.js';
 import templateRoutes from './routes/templates.js';
+import contractTemplateRoutes from './routes/contractTemplates.js';
+import { contractProjectRouter, contractRouter } from './routes/contracts.js';
 
 console.log('Iniciando Facho backend...');
 
@@ -65,10 +67,13 @@ app.use(express.json({ limit: '10kb' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/projects', contractProjectRouter);
 app.use('/api/phases', phaseRoutes);
 app.use('/api/references', referenceRoutes);
 app.use('/api/preferences', preferenceRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/contract-templates', contractTemplateRoutes);
+app.use('/api/contracts', contractRouter);
 
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 

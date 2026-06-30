@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { usePhaseData } from '../../hooks/usePhaseData.jsx';
 import { PhaseCard, SavingDot, ConcludeButton, CopyButton } from './shared.jsx';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconAlertTriangle, IconFileText } from '@tabler/icons-react';
+import api from '../../services/api.jsx';
 
 function PromptItem({ prompt, index, onChange, onRemove, disabled }) {
   return (
@@ -58,6 +60,36 @@ function PromptItem({ prompt, index, onChange, onRemove, disabled }) {
   );
 }
 
+function ContratoAviso({ projectId }) {
+  const [temAssinado, setTemAssinado] = useState(null);
+
+  useEffect(() => {
+    api.get(`/api/projects/${projectId}/contracts`)
+      .then(({ data }) => {
+        setTemAssinado(data.some(c => c.status === 'assinado'));
+      })
+      .catch(() => setTemAssinado(null));
+  }, [projectId]);
+
+  if (temAssinado === null || temAssinado === true) return null;
+
+  return (
+    <div className="flex items-start gap-2.5 bg-[#FFF8F0] border border-[#F0D8B8] rounded-btn px-3 py-2.5 text-xs text-[#7A4A1A]">
+      <IconAlertTriangle size={14} className="shrink-0 mt-0.5 text-[#C17A3A]" />
+      <div>
+        <span className="font-medium">Contrato pendente</span>
+        {' — '}nenhum contrato assinado encontrado neste projeto.{' '}
+        <button
+          onClick={() => document.querySelector('[data-tab="contratos"]')?.click()}
+          className="underline hover:no-underline"
+        >
+          Ver contratos
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Phase5Desenvolvimento({ project, phase, onPhaseUpdated, onConclude }) {
   const { data, update, updateFn, saving } = usePhaseData(project, phase, onPhaseUpdated);
   const disabled = phase.status === 'concluida';
@@ -104,6 +136,8 @@ export default function Phase5Desenvolvimento({ project, phase, onPhaseUpdated, 
         <p className="text-xs text-faint">fase 5 — desenvolvimento</p>
         <SavingDot saving={saving} />
       </div>
+
+      <ContratoAviso projectId={project.id} />
 
       {prompts.length > 0 && (
         <div className="card space-y-2">

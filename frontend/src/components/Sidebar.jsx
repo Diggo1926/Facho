@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import {
   IconLayoutDashboard, IconFolders, IconPalette,
   IconShieldLock, IconServer, IconCode, IconMessageBolt,
-  IconSettings, IconLogout, IconTemplate,
+  IconSettings, IconLogout, IconTemplate, IconFileText,
 } from '@tabler/icons-react';
 
 const BIBLIOTECA_CATS = [
@@ -69,6 +69,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         <SideItem to="/dashboard" Icon={IconLayoutDashboard} label="visão geral" end onClose={onClose} />
         <SideItem to="/projetos" Icon={IconFolders} label="projetos" onClose={onClose} />
         <SideItem to="/templates" Icon={IconTemplate} label="templates" onClose={onClose} />
+        <SideItem to="/contratos/modelos" Icon={IconFileText} label="modelos contratos" onClose={onClose} />
 
         <p className="px-3 text-[10px] font-medium text-faint uppercase tracking-widest mb-1 mt-4">
           Biblioteca
