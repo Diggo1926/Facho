@@ -10,6 +10,7 @@ import preferenceRoutes from './routes/preferences.js';
 import templateRoutes from './routes/templates.js';
 import contractTemplateRoutes from './routes/contractTemplates.js';
 import { contractProjectRouter, contractRouter } from './routes/contracts.js';
+import { validateCloudinaryConfig } from './utils/cloudinaryStorage.js';
 
 console.log('Iniciando Facho backend...');
 
@@ -39,6 +40,13 @@ if (process.env.NODE_ENV === 'production') {
     console.warn('AVISO: DATABASE_URL não contém sslmode=require.');
     console.warn('       Adicione ?sslmode=require à URL no Railway para criptografar a conexão com o banco.');
   }
+}
+
+try {
+  validateCloudinaryConfig();
+} catch (err) {
+  console.error('FATAL:', err.message);
+  process.exit(1);
 }
 
 app.use(

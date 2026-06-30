@@ -5,33 +5,35 @@ import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { encrypt, decrypt } from '../utils/encrypt.js';
 import { generateContractPdf } from '../services/contractPdf.js';
+import { uploadContractFile, getSignedDownloadUrl } from '../utils/cloudinaryStorage.js';
 import multer from 'multer';
 import { randomUUID } from 'crypto';
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const UPLOAD_DIR = path.resolve(__dirname, '../../uploads/contracts');
-if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const prisma = new PrismaClient();
 
+// Multer em memória — validamos o buffer antes de qualquer persistência.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
   fileFilter: (_req, file, cb) => {
     if (file.mimetype === 'application/pdf') cb(null, true);
     else cb(new Error('Apenas arquivos PDF são aceitos.'));
   },
 });
 
+// Verifica magic bytes do PDF (%PDF) — previne upload de arquivo disfarçado.
 function isPdf(buffer) {
   return (
     buffer.length >= 4 &&
     buffer[0] === 0x25 && buffer[1] === 0x50 &&
     buffer[2] === 0x44 && buffer[3] === 0x46
   );
+}
+
+// Monta o public_id do Cloudinary a partir do contractId e de um UUID único.
+// Prefixo 'facho/contracts/{contractId}/' agrupa os arquivos por contrato no painel.
+function buildPublicId(contractId, prefix) {
+  return `facho/contracts/${contractId}/${prefix}-${randomUUID()}`;
 }
 
 const CONTRACT_SELECT = {
@@ -58,7 +60,7 @@ async function verifyContractAccess(contractId, userId) {
   return c;
 }
 
-// ─── Router montado em /api/projects ────────────────────────────────────────
+// ─── Router montado em /api/projects ─────────────────────────────────────────
 export const contractProjectRouter = Router();
 
 // GET /api/projects/:projectId/contracts
@@ -188,14 +190,18 @@ contractRouter.put(
   }
 );
 
-// DELETE /api/contracts/:id — soft delete (marca cancelado)
+// DELETE /api/contracts/:id — SOFT DELETE (nunca apaga fisicamente)
+// Contratos assinados: bloqueados (403).
+// Demais: marcados como cancelado — sem DELETE no banco, sem DELETE no Cloudinary.
 contractRouter.delete('/:id', requireAuth, async (req, res) => {
   try {
     const c = await verifyContractAccess(req.params.id, req.userId);
     if (!c) return res.status(404).json({ error: 'Contrato não encontrado.' });
 
     if (c.status === 'assinado') {
-      return res.status(403).json({ error: 'Contratos assinados não podem ser excluídos. Marque como cancelado via PUT.' });
+      return res.status(403).json({
+        error: 'Contratos assinados não podem ser excluídos. Altere o status via PUT se necessário.',
+      });
     }
 
     await prisma.contract.update({ where: { id: req.params.id }, data: { status: 'cancelado' } });
@@ -205,7 +211,7 @@ contractRouter.delete('/:id', requireAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/contracts/:id/dados — remove dados pessoais (LGPD)
+// DELETE /api/contracts/:id/dados — remoção de dados pessoais (LGPD)
 contractRouter.delete('/:id/dados', requireAuth, async (req, res) => {
   try {
     const c = await verifyContractAccess(req.params.id, req.userId);
@@ -235,21 +241,24 @@ contractRouter.post('/:id/generate-pdf', requireAuth, async (req, res) => {
 
     const pdfBuffer = await generateContractPdf({ ...c, dados }, template);
 
-    const fileName = `contrato-${randomUUID()}.pdf`;
-    const filePath = path.join(UPLOAD_DIR, fileName);
-    writeFileSync(filePath, pdfBuffer);
+    // Envia para Cloudinary como recurso autenticado (privado).
+    // public_id guardado no banco — nunca uma URL pública.
+    const publicId = buildPublicId(req.params.id, 'gerado');
+    const uploadResult = await uploadContractFile(pdfBuffer, publicId);
 
     await prisma.contractFile.create({
       data: {
         contractId: req.params.id,
         tipoArquivo: 'gerado',
-        nomeArquivo: fileName,
+        nomeArquivo: publicId,          // referência para o Cloudinary
         mimeType: 'application/pdf',
         tamanhoBytes: pdfBuffer.length,
-        caminhoStorage: filePath,
+        caminhoStorage: uploadResult.public_id, // public_id retornado pelo Cloudinary
       },
     });
 
+    // Entrega o PDF diretamente pelo backend — o buffer já está em memória.
+    // Alternativa: redirect para URL assinada (ver endpoint /files/:fileId).
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="contrato.pdf"');
     res.send(pdfBuffer);
@@ -269,20 +278,24 @@ contractRouter.post(
       if (!c) return res.status(404).json({ error: 'Contrato não encontrado.' });
 
       if (!req.file) return res.status(400).json({ error: 'Arquivo PDF obrigatório.' });
-      if (!isPdf(req.file.buffer)) return res.status(400).json({ error: 'O arquivo não é um PDF válido.' });
 
-      const fileName = `assinado-${randomUUID()}.pdf`;
-      const filePath = path.join(UPLOAD_DIR, fileName);
-      writeFileSync(filePath, req.file.buffer);
+      // Dupla validação: MIME type (multer) + magic bytes (conteúdo real do buffer).
+      if (!isPdf(req.file.buffer)) {
+        return res.status(400).json({ error: 'O arquivo não é um PDF válido.' });
+      }
+
+      // Envia para Cloudinary — type: 'authenticated' garante privacidade total.
+      const publicId = buildPublicId(req.params.id, 'assinado');
+      const uploadResult = await uploadContractFile(req.file.buffer, publicId);
 
       const contractFile = await prisma.contractFile.create({
         data: {
           contractId: req.params.id,
           tipoArquivo: 'assinado',
-          nomeArquivo: fileName,
+          nomeArquivo: publicId,
           mimeType: 'application/pdf',
           tamanhoBytes: req.file.size,
-          caminhoStorage: filePath,
+          caminhoStorage: uploadResult.public_id,
         },
       });
 
@@ -291,7 +304,9 @@ contractRouter.post(
         data: { status: 'assinado', assinadoEm: new Date() },
       });
 
-      res.json(contractFile);
+      // Retorna metadados do arquivo, sem URL alguma.
+      const { caminhoStorage: _, ...filePublic } = contractFile;
+      res.json(filePublic);
     } catch (err) {
       if (err.message === 'Apenas arquivos PDF são aceitos.') {
         return res.status(400).json({ error: err.message });
@@ -302,6 +317,13 @@ contractRouter.post(
 );
 
 // GET /api/contracts/:id/files/:fileId
+// Fluxo:
+//  1. Verifica autenticação e ownership via JWT + FK.
+//  2. Confirma que fileId pertence ao contractId (evita acesso cruzado).
+//  3. Gera URL assinada Cloudinary (TTL 60 s — suficiente para o fetch interno).
+//  4. Backend faz proxy do arquivo: faz fetch da URL assinada e retransmite
+//     como stream para o cliente. A URL assinada NUNCA chega ao browser.
+// Proxy evita CORS cross-origin e não expõe nenhuma referência ao Cloudinary.
 contractRouter.get('/:id/files/:fileId', requireAuth, async (req, res) => {
   try {
     const c = await verifyContractAccess(req.params.id, req.userId);
@@ -312,14 +334,22 @@ contractRouter.get('/:id/files/:fileId', requireAuth, async (req, res) => {
     });
     if (!file) return res.status(404).json({ error: 'Arquivo não encontrado.' });
 
-    const safePath = path.resolve(file.caminhoStorage);
-    if (!safePath.startsWith(UPLOAD_DIR)) {
-      return res.status(403).json({ error: 'Acesso negado.' });
+    // URL assinada com TTL curto — apenas para uso interno imediato.
+    const signedUrl = getSignedDownloadUrl(file.caminhoStorage, 60);
+
+    const upstream = await fetch(signedUrl);
+    if (!upstream.ok) {
+      return res.status(502).json({ error: 'Erro ao buscar arquivo no storage.' });
     }
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="contrato-${file.tipoArquivo}.pdf"`);
-    res.sendFile(safePath);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="contrato-${file.tipoArquivo}.pdf"`
+    );
+
+    // Pipe do stream — não bufferiza o arquivo inteiro em memória.
+    upstream.body.pipe(res);
   } catch {
     res.status(500).json({ error: 'Erro ao baixar arquivo.' });
   }
