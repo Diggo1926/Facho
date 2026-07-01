@@ -7,14 +7,58 @@ const TIPO_LABELS = {
   outro: 'Contrato',
 };
 
+function buildQualificacao(dados) {
+  const tipo = dados._tipo_pessoa;
+  if (tipo === 'PF') {
+    const parts = [dados.contratante_nome].filter(Boolean);
+    if (dados.contratante_estado_civil) parts.push(dados.contratante_estado_civil);
+    if (dados.contratante_profissao) parts.push(dados.contratante_profissao);
+    if (dados.contratante_cpf) parts.push(`inscrito no CPF sob o nº ${dados.contratante_cpf}`);
+    if (dados.contratante_rg) parts.push(`RG nº ${dados.contratante_rg}`);
+    return parts.join(', ');
+  }
+  if (tipo === 'PJ') {
+    let q = dados.contratante_razao_social || '';
+    if (dados.contratante_cnpj) q += `, pessoa jurídica inscrita no CNPJ sob o nº ${dados.contratante_cnpj}`;
+    if (dados.contratante_representante_legal) q += `, neste ato representada por ${dados.contratante_representante_legal}`;
+    if (dados.contratante_cpf_representante) q += `, CPF nº ${dados.contratante_cpf_representante}`;
+    return q;
+  }
+  return '';
+}
+
+function buildEndereco(dados) {
+  const parts = [];
+  if (dados.contratante_rua) {
+    parts.push(dados.contratante_numero
+      ? `${dados.contratante_rua}, nº ${dados.contratante_numero}`
+      : dados.contratante_rua);
+  }
+  if (dados.contratante_bairro) parts.push(dados.contratante_bairro);
+  if (dados.contratante_cidade || dados.contratante_uf) {
+    parts.push([dados.contratante_cidade, dados.contratante_uf].filter(Boolean).join('/'));
+  }
+  if (dados.contratante_cep) parts.push(`CEP ${dados.contratante_cep}`);
+  return parts.join(', ');
+}
+
 export async function generateContractPdf(contract, template) {
   let corpo = template.corpo;
 
-  if (contract.dados && typeof contract.dados === 'object') {
-    for (const [key, value] of Object.entries(contract.dados)) {
-      const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-      corpo = corpo.replace(regex, value ?? '');
-    }
+  const dados = { ...(contract.dados || {}) };
+  dados.contratante_qualificacao = buildQualificacao(dados);
+  dados.contratante_endereco = buildEndereco(dados);
+
+  const contratanteNome = dados._tipo_pessoa === 'PJ'
+    ? (dados.contratante_razao_social || 'Contratante')
+    : (dados.contratante_nome || 'Contratante');
+  const contratanteDoc = dados._tipo_pessoa === 'PJ'
+    ? (dados.contratante_cnpj ? `CNPJ ${dados.contratante_cnpj}` : '')
+    : (dados.contratante_cpf ? `CPF ${dados.contratante_cpf}` : '');
+
+  for (const [key, value] of Object.entries(dados)) {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+    corpo = corpo.replace(regex, value ?? '');
   }
   corpo = corpo.replace(/\{\{[^}]+\}\}/g, '');
 
@@ -204,8 +248,8 @@ export async function generateContractPdf(contract, template) {
         <p style="color: #A0896E">Prestador de Serviços — Diggo Dev</p>
       </div>
       <div class="assinatura-bloco">
-        <p>Contratante</p>
-        <p style="color: #A0896E">&nbsp;</p>
+        <p>${contratanteNome}</p>
+        <p style="color: #A0896E">${contratanteDoc || '&nbsp;'}</p>
       </div>
     </div>
 
