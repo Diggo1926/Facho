@@ -130,6 +130,24 @@ function ContractCard({ contract, onAction }) {
   );
 }
 
+// Agrupa campos pelo prefixo da chave (ex: contratante_nome → "contratante")
+const SECTION_LABELS = {
+  contratante: 'contratante', contratada: 'contratada', cliente: 'cliente',
+  valor: 'valores', preco: 'valores', prazo: 'prazos', data: 'datas',
+  escopo: 'escopo', projeto: 'projeto',
+};
+
+function groupCampos(list) {
+  const groups = {};
+  for (const c of list) {
+    const prefix = c.chave.split('_')[0];
+    const section = SECTION_LABELS[prefix] || 'informações gerais';
+    if (!groups[section]) groups[section] = [];
+    groups[section].push(c);
+  }
+  return groups;
+}
+
 function NewContractModal({ projectId, onClose, onCreated }) {
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
@@ -137,6 +155,7 @@ function NewContractModal({ projectId, onClose, onCreated }) {
   const [titulo, setTitulo] = useState('');
   const [valorTotal, setValorTotal] = useState('');
   const [campos, setCampos] = useState({});
+  const [loadingFields, setLoadingFields] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -147,12 +166,36 @@ function NewContractModal({ projectId, onClose, onCreated }) {
       .finally(() => setLoadingTemplates(false));
   }, []);
 
-  function selectTemplate(t) {
-    setSelectedTemplate(t);
+  async function selectTemplate(t) {
+    setSelectedTemplate({ ...t, campos: t.campos || [] });
     setTitulo(t.nome);
-    const initial = {};
-    (t.campos || []).forEach(c => { initial[c.chave] = ''; });
-    setCampos(initial);
+    setCampos({});
+    setLoadingFields(true);
+    setError('');
+    try {
+      // Busca o template completo para detectar todos os {{placeholders}} do corpo
+      const { data: full } = await api.get(`/api/contract-templates/${t.id}`);
+      const detected = [...new Set(
+        [...(full.corpo || '').matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1])
+      )];
+      const defined = new Map((full.campos || []).map(c => [c.chave, c]));
+      // Campos extras detectados no corpo que não têm entrada em campos[]
+      const extra = detected
+        .filter(k => !defined.has(k))
+        .map(k => ({ chave: k, rotulo: k.replace(/_/g, ' '), tipo: 'texto', placeholder: '' }));
+      const allCampos = [...(full.campos || []), ...extra];
+      setSelectedTemplate({ ...t, campos: allCampos });
+      const initial = {};
+      allCampos.forEach(c => { initial[c.chave] = ''; });
+      setCampos(initial);
+    } catch {
+      // fallback: usa só os campos que vieram no listing
+      const initial = {};
+      (t.campos || []).forEach(c => { initial[c.chave] = ''; });
+      setCampos(initial);
+    } finally {
+      setLoadingFields(false);
+    }
   }
 
   async function handleSubmit(e) {
@@ -176,6 +219,9 @@ function NewContractModal({ projectId, onClose, onCreated }) {
       setSaving(false);
     }
   }
+
+  const camposList = selectedTemplate?.campos || [];
+  const grouped = groupCampos(camposList);
 
   return (
     <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center md:p-6">
@@ -250,20 +296,40 @@ function NewContractModal({ projectId, onClose, onCreated }) {
                 />
               </div>
 
-              {/* Campos dinâmicos */}
-              {(selectedTemplate.campos || []).length > 0 && (
-                <div className="space-y-3">
-                  <p className="text-xs font-medium text-muted">dados do cliente</p>
-                  {selectedTemplate.campos.map(campo => (
-                    <div key={campo.chave}>
-                      <label className="block text-xs text-muted mb-1">{campo.rotulo}</label>
-                      <input
-                        type={campo.tipo === 'data' ? 'date' : 'text'}
-                        value={campos[campo.chave] || ''}
-                        onChange={e => setCampos(prev => ({ ...prev, [campo.chave]: e.target.value }))}
-                        placeholder={campo.placeholder || campo.rotulo}
-                        className="w-full text-sm bg-cream border border-border rounded-btn px-3 py-2 text-dark placeholder:text-faint focus:outline-none focus:ring-1 focus:ring-terra"
-                      />
+              {/* Campos dinâmicos agrupados */}
+              {loadingFields ? (
+                <div className="flex items-center gap-2 text-faint text-xs py-2">
+                  <IconLoader2 size={14} className="animate-spin" /> carregando campos do modelo...
+                </div>
+              ) : camposList.length > 0 && (
+                <div className="space-y-4">
+                  {Object.entries(grouped).map(([section, fields], idx) => (
+                    <div key={section} className={idx > 0 ? 'pt-3 border-t border-border' : ''}>
+                      <p className="text-xs font-medium text-muted mb-2">{section}</p>
+                      <div className="space-y-3">
+                        {fields.map(campo => (
+                          <div key={campo.chave}>
+                            <label className="block text-xs text-muted mb-1">{campo.rotulo}</label>
+                            {campo.tipo === 'textarea' ? (
+                              <textarea
+                                value={campos[campo.chave] || ''}
+                                onChange={e => setCampos(prev => ({ ...prev, [campo.chave]: e.target.value }))}
+                                placeholder={campo.placeholder || campo.rotulo}
+                                rows={4}
+                                className="w-full text-sm bg-cream border border-border rounded-btn px-3 py-2 text-dark placeholder:text-faint focus:outline-none focus:ring-1 focus:ring-terra resize-y"
+                              />
+                            ) : (
+                              <input
+                                type={campo.tipo === 'data' ? 'date' : campo.tipo === 'numero' ? 'number' : 'text'}
+                                value={campos[campo.chave] || ''}
+                                onChange={e => setCampos(prev => ({ ...prev, [campo.chave]: e.target.value }))}
+                                placeholder={campo.placeholder || campo.rotulo}
+                                className="w-full text-sm bg-cream border border-border rounded-btn px-3 py-2 text-dark placeholder:text-faint focus:outline-none focus:ring-1 focus:ring-terra"
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -282,7 +348,7 @@ function NewContractModal({ projectId, onClose, onCreated }) {
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={saving || !selectedTemplate}
+            disabled={saving || !selectedTemplate || loadingFields}
             className="btn-primary flex-1 text-sm flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {saving ? <IconLoader2 size={14} className="animate-spin" /> : <IconCheck size={14} />}

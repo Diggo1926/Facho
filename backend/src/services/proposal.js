@@ -425,5 +425,5 @@ export async function generateProposal(project, phases) {
   });
 
   await browser.close();
-  return pdf;
+  return Buffer.from(pdf);
 }

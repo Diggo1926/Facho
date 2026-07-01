@@ -12,7 +12,7 @@ const TIPOS = [
   { value: 'outro',              label: 'Outro' },
 ];
 
-const TIPO_FIELD_TYPES = ['texto', 'data', 'numero'];
+const TIPO_FIELD_TYPES = ['texto', 'textarea', 'data', 'numero'];
 
 const PLACEHOLDER_INFO = `Use {{chave}} para inserir campos dinâmicos no corpo do contrato.
 Ex: "O contratante {{nome_cliente}}, portador do CPF {{cpf_cliente}}..."`;

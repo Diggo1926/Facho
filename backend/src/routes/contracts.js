@@ -348,8 +348,9 @@ contractRouter.get('/:id/files/:fileId', requireAuth, async (req, res) => {
       `attachment; filename="contrato-${file.tipoArquivo}.pdf"`
     );
 
-    // Pipe do stream — não bufferiza o arquivo inteiro em memória.
-    upstream.body.pipe(res);
+    // fetch retorna Web ReadableStream (não Node Readable), então buffemos via arrayBuffer.
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    res.send(buf);
   } catch {
     res.status(500).json({ error: 'Erro ao baixar arquivo.' });
   }

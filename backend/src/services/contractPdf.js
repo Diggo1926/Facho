@@ -13,10 +13,10 @@ export async function generateContractPdf(contract, template) {
   if (contract.dados && typeof contract.dados === 'object') {
     for (const [key, value] of Object.entries(contract.dados)) {
       const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-      corpo = corpo.replace(regex, value ?? '—');
+      corpo = corpo.replace(regex, value ?? '');
     }
   }
-  corpo = corpo.replace(/\{\{[^}]+\}\}/g, '—');
+  corpo = corpo.replace(/\{\{[^}]+\}\}/g, '');
 
   // Converter quebras de linha em parágrafos HTML
   const corpoHtml = corpo
@@ -233,5 +233,5 @@ export async function generateContractPdf(contract, template) {
   });
 
   await browser.close();
-  return pdf;
+  return Buffer.from(pdf);
 }
