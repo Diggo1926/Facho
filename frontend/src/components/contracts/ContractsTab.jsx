@@ -130,7 +130,7 @@ function ContractCard({ contract, onAction }) {
   );
 }
 
-// Chaves gerenciadas pelo formulário de identificação/endereço — excluídas do tab "Contrato"
+// Chaves gerenciadas pelo formulário — excluídas do tab "Contrato"
 const BUILTIN_KEYS = new Set([
   '_tipo_pessoa',
   'contratante_nome', 'contratante_cpf', 'contratante_rg',
@@ -140,7 +140,10 @@ const BUILTIN_KEYS = new Set([
   'contratante_rua', 'contratante_numero', 'contratante_bairro',
   'contratante_cidade', 'contratante_uf', 'contratante_cep',
   'contratante_qualificacao', 'contratante_endereco',
+  'valor_total', 'valor_total_extenso', 'valor_entrada', 'valor_homologacao', 'valor_final',
 ]);
+
+const VALOR_KEYS = new Set(['valor_total', 'valor_total_extenso', 'valor_entrada', 'valor_homologacao', 'valor_final']);
 
 const UF_LIST = [
   'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS',
@@ -167,6 +170,57 @@ function maskCNPJ(v) {
 function maskCEP(v) {
   return v.replace(/\D/g,'').slice(0,8)
     .replace(/(\d{5})(\d{1,3})$/,'$1-$2');
+}
+
+function formatBRL(v) {
+  return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+const _UND = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove',
+  'dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+const _DEZ = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+const _CEN = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos',
+  'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+
+function _centenas(n) {
+  if (n === 0) return '';
+  if (n === 100) return 'cem';
+  const parts = [];
+  const c = Math.floor(n / 100);
+  const r = n % 100;
+  if (c) parts.push(_CEN[c]);
+  if (r >= 20) {
+    parts.push(_DEZ[Math.floor(r / 10)] + (r % 10 ? ' e ' + _UND[r % 10] : ''));
+  } else if (r) {
+    parts.push(_UND[r]);
+  }
+  return parts.join(' e ');
+}
+
+function toExtenso(value) {
+  if (!value || value <= 0) return '';
+  const total = Math.round(value * 100);
+  const reais = Math.floor(total / 100);
+  const centavos = total % 100;
+  const parts = [];
+  if (reais > 0) {
+    let r;
+    if (reais >= 1000) {
+      const mil = Math.floor(reais / 1000);
+      const resto = reais % 1000;
+      const milStr = mil === 1 ? 'mil' : _centenas(mil) + ' mil';
+      r = resto ? milStr + (resto < 100 ? ' e ' : ' e ') + _centenas(resto) : milStr;
+    } else {
+      r = _centenas(reais);
+    }
+    parts.push(r + (reais === 1 ? ' real' : ' reais'));
+  }
+  if (centavos > 0) {
+    const c = centavos < 20 ? _UND[centavos]
+      : _DEZ[Math.floor(centavos / 10)] + (centavos % 10 ? ' e ' + _UND[centavos % 10] : '');
+    parts.push(c + (centavos === 1 ? ' centavo' : ' centavos'));
+  }
+  return parts.length ? parts.join(' e ') : 'zero reais';
 }
 
 function inputCls(hasError) {
@@ -199,6 +253,9 @@ function NewContractModal({ projectId, onClose, onCreated }) {
 
   const [titulo, setTitulo] = useState('');
   const [valorTotal, setValorTotal] = useState('');
+  const [hasValorCampos, setHasValorCampos] = useState(false);
+  const [percentuais, setPercentuais] = useState([40, 30, 30]);
+  const [showAjuste, setShowAjuste] = useState(false);
   const [camposList, setCamposList] = useState([]);
   const [campos, setCampos] = useState({});
 
@@ -218,6 +275,10 @@ function NewContractModal({ projectId, onClose, onCreated }) {
     setTitulo(t.nome);
     setCamposList([]);
     setCampos({});
+    setValorTotal('');
+    setPercentuais([40, 30, 30]);
+    setShowAjuste(false);
+    setHasValorCampos(false);
     setTab(0);
     setErrors({});
     setSaveError('');
@@ -227,6 +288,8 @@ function NewContractModal({ projectId, onClose, onCreated }) {
       const detected = [...new Set(
         [...(full.corpo || '').matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1])
       )];
+      const temValor = detected.some(k => VALOR_KEYS.has(k));
+      setHasValorCampos(temValor);
       const defined = new Map((full.campos || []).map(c => [c.chave, c]));
       const extra = detected
         .filter(k => !defined.has(k) && !BUILTIN_KEYS.has(k))
@@ -277,6 +340,12 @@ function NewContractModal({ projectId, onClose, onCreated }) {
     }
     if (idx === 2) {
       if (!titulo.trim()) errs.titulo = 'Título obrigatório';
+      if (hasValorCampos) {
+        const n = parseFloat(valorTotal);
+        if (!valorTotal || isNaN(n) || n <= 0) errs.valorTotal = 'Informe um valor total positivo';
+        const soma = percentuais.reduce((a, b) => a + (Number(b) || 0), 0);
+        if (soma !== 100) errs.percentuais = 'A soma das parcelas deve ser 100%';
+      }
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -313,11 +382,20 @@ function NewContractModal({ projectId, onClose, onCreated }) {
         contratante_cep: endereco.cep,
         ...campos,
       };
+      const valorNum = parseFloat(valorTotal) || 0;
+      if (hasValorCampos && valorNum > 0) {
+        const [pct0, pct1, pct2] = percentuais.map(Number);
+        dados.valor_total = formatBRL(valorNum);
+        dados.valor_total_extenso = toExtenso(valorNum);
+        dados.valor_entrada = formatBRL(valorNum * pct0 / 100);
+        dados.valor_homologacao = formatBRL(valorNum * pct1 / 100);
+        dados.valor_final = formatBRL(valorNum * pct2 / 100);
+      }
       await api.post(`/api/projects/${projectId}/contracts`, {
         templateId: selectedTemplate.id,
         titulo: titulo.trim(),
         dados,
-        valorTotal: valorTotal ? parseFloat(valorTotal) : null,
+        valorTotal: valorNum || null,
       });
       onCreated();
       onClose();
@@ -569,70 +647,142 @@ function NewContractModal({ projectId, onClose, onCreated }) {
           )}
 
           {/* TAB 2 — Contrato */}
-          {tab === 2 && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs text-muted mb-1.5">Título do contrato <span className="text-red-400">*</span></label>
-                <input
-                  value={titulo}
-                  onChange={e => { setTitulo(e.target.value); if (errors.titulo) setErrors(p => ({ ...p, titulo: '' })); }}
-                  placeholder="ex: Contrato — Cliente XYZ"
-                  className={inputCls(!!errors.titulo)}
-                />
-                <FieldError msg={errors.titulo} />
-              </div>
-              <div>
-                <label className="block text-xs text-muted mb-1.5">Valor total <span className="text-faint text-[11px]">(opcional)</span></label>
-                <input
-                  type="number"
-                  value={valorTotal}
-                  onChange={e => setValorTotal(e.target.value)}
-                  placeholder="0,00"
-                  min="0"
-                  step="0.01"
-                  className={inputCls(false)}
-                />
-              </div>
-
-              {loadingFields ? (
-                <div className="flex items-center gap-2 text-faint text-xs py-2">
-                  <IconLoader2 size={14} className="animate-spin" /> carregando campos do modelo...
+          {tab === 2 && (() => {
+            const valorNum = parseFloat(valorTotal) || 0;
+            const [pct0, pct1, pct2] = percentuais.map(Number);
+            const pctSum = pct0 + pct1 + pct2;
+            return (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs text-muted mb-1.5">Título do contrato <span className="text-red-400">*</span></label>
+                  <input
+                    value={titulo}
+                    onChange={e => { setTitulo(e.target.value); if (errors.titulo) setErrors(p => ({ ...p, titulo: '' })); }}
+                    placeholder="ex: Contrato — Cliente XYZ"
+                    className={inputCls(!!errors.titulo)}
+                  />
+                  <FieldError msg={errors.titulo} />
                 </div>
-              ) : camposList.length > 0 && (
-                <div className="space-y-3 pt-2 border-t border-border">
-                  <p className="text-xs font-medium text-muted">campos do modelo</p>
-                  {camposList.map(campo => (
-                    <div key={campo.chave}>
-                      <label className="block text-xs text-muted mb-1">{campo.rotulo}</label>
-                      {campo.tipo === 'textarea' ? (
-                        <textarea
-                          value={campos[campo.chave] || ''}
-                          onChange={e => setCampos(p => ({ ...p, [campo.chave]: e.target.value }))}
-                          placeholder={campo.placeholder || campo.rotulo}
-                          rows={4}
-                          className="w-full text-sm bg-cream border border-border rounded-btn px-3 py-2 text-dark placeholder:text-faint focus:outline-none focus:ring-1 focus:ring-terra resize-y"
-                        />
-                      ) : (
-                        <input
-                          type={campo.tipo === 'data' ? 'date' : campo.tipo === 'numero' ? 'number' : 'text'}
-                          value={campos[campo.chave] || ''}
-                          onChange={e => setCampos(p => ({ ...p, [campo.chave]: e.target.value }))}
-                          placeholder={campo.placeholder || campo.rotulo}
-                          className={inputCls(false)}
-                        />
-                      )}
+
+                {/* Seção de valores — só para templates com {{valor_*}} */}
+                {hasValorCampos && (
+                  <div className="space-y-3 pt-1 pb-3 border-b border-border">
+                    <div>
+                      <label className="block text-xs text-muted mb-1.5">
+                        Valor total (R$) <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={valorTotal}
+                        onChange={e => { setValorTotal(e.target.value); if (errors.valorTotal) setErrors(p => ({ ...p, valorTotal: '' })); }}
+                        placeholder="ex: 2500.00"
+                        min="0"
+                        step="0.01"
+                        className={inputCls(!!errors.valorTotal)}
+                      />
+                      <FieldError msg={errors.valorTotal} />
                     </div>
-                  ))}
-                </div>
-              )}
 
-              {saveError && (
-                <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 border border-red-200 rounded-btn px-3 py-2">
-                  <IconAlertTriangle size={13} /> {saveError}
-                </div>
-              )}
-            </div>
-          )}
+                    {valorNum > 0 && (
+                      <>
+                        {/* Extenso */}
+                        <p className="text-[11px] text-faint italic">{toExtenso(valorNum)}</p>
+
+                        {/* Parcelas calculadas */}
+                        <div className="bg-cream rounded-btn px-3 py-2.5 space-y-1">
+                          <p className="text-[10px] font-medium text-muted uppercase tracking-wide mb-1.5">parcelas calculadas</p>
+                          {[
+                            ['Entrada', pct0, valorNum * pct0 / 100],
+                            ['Homologação', pct1, valorNum * pct1 / 100],
+                            ['Final', pct2, valorNum * pct2 / 100],
+                          ].map(([label, pct, val]) => (
+                            <div key={label} className="flex justify-between text-xs">
+                              <span className="text-muted">{label} <span className="text-faint">({pct}%)</span></span>
+                              <span className="font-medium text-dark">{formatBRL(val)}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Ajuste de percentuais */}
+                        <button
+                          type="button"
+                          onClick={() => setShowAjuste(v => !v)}
+                          className="text-[11px] text-terra hover:underline"
+                        >
+                          {showAjuste ? 'ocultar ajuste' : 'ajustar parcelas'}
+                        </button>
+
+                        {showAjuste && (
+                          <div className="space-y-2">
+                            {['Entrada (%)', 'Homologação (%)', 'Final (%)'].map((label, i) => (
+                              <div key={i} className="flex items-center gap-3">
+                                <label className="text-xs text-muted w-28 shrink-0">{label}</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={percentuais[i]}
+                                  onChange={e => {
+                                    const next = [...percentuais];
+                                    next[i] = e.target.value === '' ? '' : Math.max(0, Math.min(100, Number(e.target.value)));
+                                    setPercentuais(next);
+                                    if (errors.percentuais) setErrors(p => ({ ...p, percentuais: '' }));
+                                  }}
+                                  className="w-20 text-sm bg-cream border border-border rounded-btn px-2 py-1 text-dark focus:outline-none focus:ring-1 focus:ring-terra"
+                                />
+                              </div>
+                            ))}
+                            <p className={`text-[11px] ${pctSum === 100 ? 'text-faint' : 'text-red-500'}`}>
+                              Soma: {pctSum}% {pctSum === 100 ? '✓' : `(faltam ${100 - pctSum}%)`}
+                            </p>
+                            <FieldError msg={errors.percentuais} />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {loadingFields ? (
+                  <div className="flex items-center gap-2 text-faint text-xs py-2">
+                    <IconLoader2 size={14} className="animate-spin" /> carregando campos do modelo...
+                  </div>
+                ) : camposList.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-medium text-muted">campos do modelo</p>
+                    {camposList.map(campo => (
+                      <div key={campo.chave}>
+                        <label className="block text-xs text-muted mb-1">{campo.rotulo}</label>
+                        {campo.tipo === 'textarea' ? (
+                          <textarea
+                            value={campos[campo.chave] || ''}
+                            onChange={e => setCampos(p => ({ ...p, [campo.chave]: e.target.value }))}
+                            placeholder={campo.placeholder || campo.rotulo}
+                            rows={4}
+                            className="w-full text-sm bg-cream border border-border rounded-btn px-3 py-2 text-dark placeholder:text-faint focus:outline-none focus:ring-1 focus:ring-terra resize-y"
+                          />
+                        ) : (
+                          <input
+                            type={campo.tipo === 'data' ? 'date' : campo.tipo === 'numero' ? 'number' : 'text'}
+                            value={campos[campo.chave] || ''}
+                            onChange={e => setCampos(p => ({ ...p, [campo.chave]: e.target.value }))}
+                            placeholder={campo.placeholder || campo.rotulo}
+                            className={inputCls(false)}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {saveError && (
+                  <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 border border-red-200 rounded-btn px-3 py-2">
+                    <IconAlertTriangle size={13} /> {saveError}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Rodapé de navegação */}
