@@ -49,12 +49,15 @@ export async function generateContractPdf(contract, template) {
   dados.contratante_qualificacao = buildQualificacao(dados);
   dados.contratante_endereco = buildEndereco(dados);
 
-  const contratanteNome = dados._tipo_pessoa === 'PJ'
-    ? (dados.contratante_razao_social || 'Contratante')
-    : (dados.contratante_nome || 'Contratante');
-  const contratanteDoc = dados._tipo_pessoa === 'PJ'
-    ? (dados.contratante_cnpj ? `CNPJ ${dados.contratante_cnpj}` : '')
-    : (dados.contratante_cpf ? `CPF ${dados.contratante_cpf}` : '');
+  // Nome usado na linha de assinatura do modelo (placeholder {{contratante_nome}}):
+  // para PJ, combina razão social e representante legal, conforme exigido nos modelos.
+  if (dados._tipo_pessoa === 'PJ') {
+    dados.contratante_nome = dados.contratante_representante_legal
+      ? `${dados.contratante_razao_social || 'Contratante'}, representada por ${dados.contratante_representante_legal}`
+      : (dados.contratante_razao_social || 'Contratante');
+  } else if (!dados.contratante_nome) {
+    dados.contratante_nome = 'Contratante';
+  }
 
   for (const [key, value] of Object.entries(dados)) {
     const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
@@ -74,7 +77,6 @@ export async function generateContractPdf(contract, template) {
     .join('');
 
   const tipoLabel = TIPO_LABELS[contract.tipo] || 'Contrato';
-  const dataFormatada = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 
   const html = `
 <!DOCTYPE html>
@@ -120,36 +122,6 @@ export async function generateContractPdf(contract, template) {
       margin-top: 22px;
       margin-bottom: 8px;
     }
-
-    .data-assinatura {
-      text-align: center;
-      margin-top: 48px;
-      margin-bottom: 8px;
-    }
-
-    .assinaturas {
-      margin-top: 56px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 40px;
-    }
-
-    .assinatura-bloco {
-      border-top: 1px solid #111;
-      padding-top: 8px;
-      text-align: center;
-    }
-
-    .assinatura-bloco .nome {
-      font-size: 12px;
-      font-weight: 700;
-      margin-bottom: 2px;
-    }
-
-    .assinatura-bloco .cargo {
-      font-size: 11px;
-      color: #333;
-    }
   </style>
 </head>
 <body>
@@ -158,19 +130,6 @@ export async function generateContractPdf(contract, template) {
   ${contract.titulo && contract.titulo !== tipoLabel ? `<div class="subtitulo-contrato">${contract.titulo}</div>` : ''}
 
   ${corpoHtml}
-
-  <p class="data-assinatura">${dataFormatada}.</p>
-
-  <div class="assinaturas">
-    <div class="assinatura-bloco">
-      <p class="nome">Rodrigo Carvalho Mamede</p>
-      <p class="cargo">Prestador de Serviços</p>
-    </div>
-    <div class="assinatura-bloco">
-      <p class="nome">${contratanteNome}</p>
-      <p class="cargo">${contratanteDoc || '&nbsp;'}</p>
-    </div>
-  </div>
 
 </body>
 </html>`;
