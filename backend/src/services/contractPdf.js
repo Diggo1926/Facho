@@ -62,10 +62,15 @@ export async function generateContractPdf(contract, template) {
   }
   corpo = corpo.replace(/\{\{[^}]+\}\}/g, '');
 
-  // Converter quebras de linha em parágrafos HTML
+  // Converter quebras de linha em parágrafos HTML, destacando títulos de cláusula
   const corpoHtml = corpo
     .split(/\n\n+/)
-    .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+    .map(p => {
+      const trimmed = p.trim();
+      const ehTituloClausula = /^cl[áa]usula\b/i.test(trimmed) && trimmed.length < 120;
+      const inner = trimmed.replace(/\n/g, '<br>');
+      return ehTituloClausula ? `<p class="clausula-titulo">${inner}</p>` : `<p>${inner}</p>`;
+    })
     .join('');
 
   const tipoLabel = TIPO_LABELS[contract.tipo] || 'Contrato';
@@ -77,185 +82,93 @@ export async function generateContractPdf(contract, template) {
 <head>
   <meta charset="UTF-8">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'DM Sans', sans-serif;
-      color: #2C1810;
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      color: #111;
       background: #fff;
-      font-size: 13px;
-      line-height: 1.8;
+      font-size: 12.5px;
+      line-height: 1.6;
     }
 
-    .cover {
-      background: #F5F0E8;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 80px;
-      page-break-after: always;
-    }
-
-    .cover-label {
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: #A0896E;
-      margin-bottom: 20px;
-    }
-
-    .cover-tipo {
-      font-size: 32px;
+    .titulo-contrato {
+      font-size: 18px;
       font-weight: 700;
-      color: #2C1810;
-      line-height: 1.2;
-      margin-bottom: 12px;
-    }
-
-    .cover-titulo {
-      font-size: 20px;
-      color: #7A4A3A;
-      margin-bottom: 48px;
-    }
-
-    .cover-meta {
-      display: flex;
-      gap: 48px;
-      border-top: 1px solid #E0D8CC;
-      padding-top: 28px;
-    }
-
-    .cover-meta-item label {
-      font-size: 10px;
-      letter-spacing: 0.15em;
+      text-align: center;
       text-transform: uppercase;
-      color: #A0896E;
-      display: block;
+      letter-spacing: 0.04em;
       margin-bottom: 4px;
     }
 
-    .cover-meta-item span {
-      font-size: 15px;
-      font-weight: 500;
-      color: #2C1810;
-    }
-
-    .corpo-page {
-      padding: 64px 80px;
-    }
-
-    .section-label {
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: #A0896E;
-      margin-bottom: 6px;
-    }
-
-    h2 {
-      font-size: 22px;
-      font-weight: 700;
-      color: #2C1810;
-      margin-bottom: 28px;
-      padding-bottom: 14px;
-      border-bottom: 1px solid #E0D8CC;
+    .subtitulo-contrato {
+      font-size: 13px;
+      font-style: italic;
+      text-align: center;
+      color: #333;
+      margin-bottom: 32px;
     }
 
     p {
-      color: #3D2418;
-      margin-bottom: 14px;
+      color: #111;
+      margin-bottom: 12px;
       text-align: justify;
     }
 
-    .footer {
-      margin-top: 64px;
-      padding-top: 24px;
-      border-top: 1px solid #E0D8CC;
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: #C9BFB0;
+    .clausula-titulo {
+      font-weight: 700;
+      margin-top: 22px;
+      margin-bottom: 8px;
+    }
+
+    .data-assinatura {
+      text-align: center;
+      margin-top: 48px;
+      margin-bottom: 8px;
     }
 
     .assinaturas {
-      margin-top: 80px;
+      margin-top: 56px;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 48px;
+      gap: 40px;
     }
 
     .assinatura-bloco {
-      border-top: 1px solid #2C1810;
-      padding-top: 12px;
+      border-top: 1px solid #111;
+      padding-top: 8px;
+      text-align: center;
     }
 
-    .assinatura-bloco p {
+    .assinatura-bloco .nome {
       font-size: 12px;
-      color: #6B5440;
+      font-weight: 700;
       margin-bottom: 2px;
     }
 
-    .versao-badge {
-      display: inline-block;
-      background: #EDE4D8;
-      color: #7A4A3A;
-      border-radius: 4px;
-      padding: 2px 10px;
-      font-size: 10px;
-      font-weight: 500;
+    .assinatura-bloco .cargo {
+      font-size: 11px;
+      color: #333;
     }
   </style>
 </head>
 <body>
 
-  <div class="cover">
-    <div class="cover-label">Facho · Rodrigo Carvalho Mamede</div>
-    <div class="cover-tipo">${tipoLabel}</div>
-    <div class="cover-titulo">${contract.titulo}</div>
-    <div class="cover-meta">
-      <div class="cover-meta-item">
-        <label>Data</label>
-        <span>${dataFormatada}</span>
-      </div>
-      <div class="cover-meta-item">
-        <label>Versão</label>
-        <span>v${contract.versao}</span>
-      </div>
-      ${contract.valorTotal ? `
-      <div class="cover-meta-item">
-        <label>Valor Total</label>
-        <span>R$ ${Number(contract.valorTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-      </div>
-      ` : ''}
-      <div class="cover-meta-item">
-        <label>Status</label>
-        <span>${contract.status.charAt(0).toUpperCase() + contract.status.slice(1).replace('_', ' ')}</span>
-      </div>
+  <div class="titulo-contrato">${tipoLabel.toUpperCase()}</div>
+  ${contract.titulo && contract.titulo !== tipoLabel ? `<div class="subtitulo-contrato">${contract.titulo}</div>` : ''}
+
+  ${corpoHtml}
+
+  <p class="data-assinatura">${dataFormatada}.</p>
+
+  <div class="assinaturas">
+    <div class="assinatura-bloco">
+      <p class="nome">Rodrigo Carvalho Mamede</p>
+      <p class="cargo">Prestador de Serviços</p>
     </div>
-  </div>
-
-  <div class="corpo-page">
-    <div class="section-label">Corpo do Contrato</div>
-    <h2>${tipoLabel}</h2>
-    ${corpoHtml}
-
-    <div class="assinaturas">
-      <div class="assinatura-bloco">
-        <p>Rodrigo Carvalho Mamede</p>
-        <p style="color: #A0896E">Prestador de Serviços — Diggo Dev</p>
-      </div>
-      <div class="assinatura-bloco">
-        <p>${contratanteNome}</p>
-        <p style="color: #A0896E">${contratanteDoc || '&nbsp;'}</p>
-      </div>
-    </div>
-
-    <div class="footer">
-      <span>Gerado via Facho · Rodrigo Carvalho Mamede</span>
-      <span>${dataFormatada} · <span class="versao-badge">v${contract.versao}</span></span>
+    <div class="assinatura-bloco">
+      <p class="nome">${contratanteNome}</p>
+      <p class="cargo">${contratanteDoc || '&nbsp;'}</p>
     </div>
   </div>
 
@@ -273,7 +186,10 @@ export async function generateContractPdf(contract, template) {
   const pdf = await page.pdf({
     format: 'A4',
     printBackground: true,
-    margin: { top: '0', right: '0', bottom: '0', left: '0' },
+    margin: { top: '2.5cm', right: '2.5cm', bottom: '2.5cm', left: '2.5cm' },
+    displayHeaderFooter: true,
+    headerTemplate: '<span></span>',
+    footerTemplate: `<div style="width: 100%; text-align: center; font-size: 9px; color: #333; font-family: Georgia, 'Times New Roman', serif;">Página <span class="pageNumber"></span> de <span class="totalPages"></span></div>`,
   });
 
   await browser.close();
