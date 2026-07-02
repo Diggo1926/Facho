@@ -141,9 +141,11 @@ const BUILTIN_KEYS = new Set([
   'contratante_cidade', 'contratante_uf', 'contratante_cep',
   'contratante_qualificacao', 'contratante_endereco',
   'valor_total', 'valor_total_extenso', 'valor_entrada', 'valor_homologacao', 'valor_final',
+  'valor_mensalidade', 'valor_mensalidade_extenso',
 ]);
 
 const VALOR_KEYS = new Set(['valor_total', 'valor_total_extenso', 'valor_entrada', 'valor_homologacao', 'valor_final']);
+const MENSALIDADE_KEYS = new Set(['valor_mensalidade', 'valor_mensalidade_extenso']);
 
 const UF_LIST = [
   'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS',
@@ -256,6 +258,8 @@ function NewContractModal({ projectId, onClose, onCreated }) {
   const [hasValorCampos, setHasValorCampos] = useState(false);
   const [percentuais, setPercentuais] = useState([40, 30, 30]);
   const [showAjuste, setShowAjuste] = useState(false);
+  const [valorMensalidade, setValorMensalidade] = useState('');
+  const [hasValorMensalidade, setHasValorMensalidade] = useState(false);
   const [camposList, setCamposList] = useState([]);
   const [campos, setCampos] = useState({});
 
@@ -279,6 +283,8 @@ function NewContractModal({ projectId, onClose, onCreated }) {
     setPercentuais([40, 30, 30]);
     setShowAjuste(false);
     setHasValorCampos(false);
+    setValorMensalidade('');
+    setHasValorMensalidade(false);
     setTab(0);
     setErrors({});
     setSaveError('');
@@ -290,6 +296,8 @@ function NewContractModal({ projectId, onClose, onCreated }) {
       )];
       const temValor = detected.some(k => VALOR_KEYS.has(k));
       setHasValorCampos(temValor);
+      const temMensalidade = detected.some(k => MENSALIDADE_KEYS.has(k));
+      setHasValorMensalidade(temMensalidade);
       const defined = new Map((full.campos || []).map(c => [c.chave, c]));
       const extra = detected
         .filter(k => !defined.has(k) && !BUILTIN_KEYS.has(k))
@@ -346,6 +354,10 @@ function NewContractModal({ projectId, onClose, onCreated }) {
         const soma = percentuais.reduce((a, b) => a + (Number(b) || 0), 0);
         if (soma !== 100) errs.percentuais = 'A soma das parcelas deve ser 100%';
       }
+      if (hasValorMensalidade) {
+        const n = parseFloat(valorMensalidade);
+        if (!valorMensalidade || isNaN(n) || n <= 0) errs.valorMensalidade = 'Informe um valor de mensalidade positivo';
+      }
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -390,6 +402,11 @@ function NewContractModal({ projectId, onClose, onCreated }) {
         dados.valor_entrada = formatBRL(valorNum * pct0 / 100);
         dados.valor_homologacao = formatBRL(valorNum * pct1 / 100);
         dados.valor_final = formatBRL(valorNum * pct2 / 100);
+      }
+      const valorMensalidadeNum = parseFloat(valorMensalidade) || 0;
+      if (hasValorMensalidade && valorMensalidadeNum > 0) {
+        dados.valor_mensalidade = formatBRL(valorMensalidadeNum);
+        dados.valor_mensalidade_extenso = toExtenso(valorMensalidadeNum);
       }
       await api.post(`/api/projects/${projectId}/contracts`, {
         templateId: selectedTemplate.id,
@@ -454,7 +471,7 @@ function NewContractModal({ projectId, onClose, onCreated }) {
   return (
     <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center md:p-6">
       <div className="absolute inset-0 bg-black/40 hidden md:block" onClick={onClose} />
-      <div className="relative bg-surface w-full h-full md:h-auto md:max-w-lg md:rounded-card md:border border-border shadow-lg z-10 flex flex-col">
+      <div className="relative bg-surface w-full h-full md:h-auto md:max-w-2xl md:rounded-card md:border border-border shadow-lg z-10 flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border">
@@ -516,8 +533,8 @@ function NewContractModal({ projectId, onClose, onCreated }) {
               </div>
 
               {tipoPessoa === 'PF' ? (
-                <>
-                  <div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
                     <label className="block text-xs text-muted mb-1.5">Nome completo <span className="text-red-400">*</span></label>
                     <input value={ident.nome} onChange={e => setI('nome', e.target.value)}
                       placeholder="Nome completo do contratante"
@@ -538,26 +555,24 @@ function NewContractModal({ projectId, onClose, onCreated }) {
                       placeholder="Documento de identidade"
                       className={inputCls(false)} />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-muted mb-1.5">Estado civil <span className="text-faint text-[11px]">(opcional)</span></label>
-                      <select value={ident.estadoCivil} onChange={e => setI('estadoCivil', e.target.value)}
-                        className={inputCls(false)}>
-                        <option value="">— selecione —</option>
-                        {ESTADO_CIVIL_LIST.map(v => <option key={v} value={v}>{v}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-muted mb-1.5">Profissão <span className="text-faint text-[11px]">(opcional)</span></label>
-                      <input value={ident.profissao} onChange={e => setI('profissao', e.target.value)}
-                        placeholder="ex: designer"
-                        className={inputCls(false)} />
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
                   <div>
+                    <label className="block text-xs text-muted mb-1.5">Estado civil <span className="text-faint text-[11px]">(opcional)</span></label>
+                    <select value={ident.estadoCivil} onChange={e => setI('estadoCivil', e.target.value)}
+                      className={inputCls(false)}>
+                      <option value="">— selecione —</option>
+                      {ESTADO_CIVIL_LIST.map(v => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1.5">Profissão <span className="text-faint text-[11px]">(opcional)</span></label>
+                    <input value={ident.profissao} onChange={e => setI('profissao', e.target.value)}
+                      placeholder="ex: designer"
+                      className={inputCls(false)} />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
                     <label className="block text-xs text-muted mb-1.5">Razão social <span className="text-red-400">*</span></label>
                     <input value={ident.razaoSocial} onChange={e => setI('razaoSocial', e.target.value)}
                       placeholder="Nome jurídico da empresa"
@@ -586,7 +601,7 @@ function NewContractModal({ projectId, onClose, onCreated }) {
                       placeholder="000.000.000-00"
                       className={inputCls(false)} />
                   </div>
-                </>
+                </div>
               )}
             </div>
           )}
@@ -601,7 +616,7 @@ function NewContractModal({ projectId, onClose, onCreated }) {
                   className={inputCls(!!errors.rua)} />
                 <FieldError msg={errors.rua} />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs text-muted mb-1.5">Número <span className="text-red-400">*</span></label>
                   <input value={endereco.numero} onChange={e => setE('numero', e.target.value)}
@@ -609,39 +624,39 @@ function NewContractModal({ projectId, onClose, onCreated }) {
                     className={inputCls(!!errors.numero)} />
                   <FieldError msg={errors.numero} />
                 </div>
-                <div className="col-span-2">
-                  <label className="block text-xs text-muted mb-1.5">Bairro <span className="text-red-400">*</span></label>
-                  <input value={endereco.bairro} onChange={e => setE('bairro', e.target.value)}
-                    placeholder="Centro"
-                    className={inputCls(!!errors.bairro)} />
-                  <FieldError msg={errors.bairro} />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
-                  <label className="block text-xs text-muted mb-1.5">Cidade <span className="text-red-400">*</span></label>
-                  <input value={endereco.cidade} onChange={e => setE('cidade', e.target.value)}
-                    placeholder="São Paulo"
-                    className={inputCls(!!errors.cidade)} />
-                  <FieldError msg={errors.cidade} />
+                <div>
+                  <label className="block text-xs text-muted mb-1.5">CEP <span className="text-red-400">*</span></label>
+                  <input value={endereco.cep}
+                    onChange={e => setE('cep', maskCEP(e.target.value))}
+                    placeholder="00000-000"
+                    className={inputCls(!!errors.cep)} />
+                  <FieldError msg={errors.cep} />
                 </div>
                 <div>
-                  <label className="block text-xs text-muted mb-1.5">UF <span className="text-red-400">*</span></label>
-                  <select value={endereco.uf} onChange={e => setE('uf', e.target.value)}
-                    className={inputCls(!!errors.uf)}>
-                    <option value="">—</option>
-                    {UF_LIST.map(u => <option key={u} value={u}>{u}</option>)}
-                  </select>
-                  <FieldError msg={errors.uf} />
+                  <label className="block text-xs text-muted mb-1.5">Cidade / UF <span className="text-red-400">*</span></label>
+                  <div className="flex gap-2">
+                    <div className="flex-[2]">
+                      <input value={endereco.cidade} onChange={e => setE('cidade', e.target.value)}
+                        placeholder="São Paulo"
+                        className={inputCls(!!errors.cidade)} />
+                    </div>
+                    <div className="flex-1">
+                      <select value={endereco.uf} onChange={e => setE('uf', e.target.value)}
+                        className={inputCls(!!errors.uf)}>
+                        <option value="">—</option>
+                        {UF_LIST.map(u => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <FieldError msg={errors.cidade || errors.uf} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-muted mb-1.5">CEP <span className="text-red-400">*</span></label>
-                <input value={endereco.cep}
-                  onChange={e => setE('cep', maskCEP(e.target.value))}
-                  placeholder="00000-000"
-                  className={inputCls(!!errors.cep)} />
-                <FieldError msg={errors.cep} />
+                <label className="block text-xs text-muted mb-1.5">Bairro <span className="text-red-400">*</span></label>
+                <input value={endereco.bairro} onChange={e => setE('bairro', e.target.value)}
+                  placeholder="Centro"
+                  className={inputCls(!!errors.bairro)} />
+                <FieldError msg={errors.bairro} />
               </div>
             </div>
           )}
@@ -651,6 +666,7 @@ function NewContractModal({ projectId, onClose, onCreated }) {
             const valorNum = parseFloat(valorTotal) || 0;
             const [pct0, pct1, pct2] = percentuais.map(Number);
             const pctSum = pct0 + pct1 + pct2;
+            const valorMensalidadeNum = parseFloat(valorMensalidade) || 0;
             return (
               <div className="space-y-4">
                 <div>
@@ -743,6 +759,30 @@ function NewContractModal({ projectId, onClose, onCreated }) {
                   </div>
                 )}
 
+                {/* Seção de mensalidade — só para templates com {{valor_mensalidade*}} */}
+                {hasValorMensalidade && (
+                  <div className="space-y-2 pt-1 pb-3 border-b border-border">
+                    <div>
+                      <label className="block text-xs text-muted mb-1.5">
+                        Valor da mensalidade (R$) <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={valorMensalidade}
+                        onChange={e => { setValorMensalidade(e.target.value); if (errors.valorMensalidade) setErrors(p => ({ ...p, valorMensalidade: '' })); }}
+                        placeholder="ex: 300.00"
+                        min="0"
+                        step="0.01"
+                        className={inputCls(!!errors.valorMensalidade)}
+                      />
+                      <FieldError msg={errors.valorMensalidade} />
+                    </div>
+                    {valorMensalidadeNum > 0 && (
+                      <p className="text-[11px] text-faint italic">{toExtenso(valorMensalidadeNum)}</p>
+                    )}
+                  </div>
+                )}
+
                 {loadingFields ? (
                   <div className="flex items-center gap-2 text-faint text-xs py-2">
                     <IconLoader2 size={14} className="animate-spin" /> carregando campos do modelo...
@@ -750,28 +790,30 @@ function NewContractModal({ projectId, onClose, onCreated }) {
                 ) : camposList.length > 0 && (
                   <div className="space-y-3">
                     <p className="text-xs font-medium text-muted">campos do modelo</p>
-                    {camposList.map(campo => (
-                      <div key={campo.chave}>
-                        <label className="block text-xs text-muted mb-1">{campo.rotulo}</label>
-                        {campo.tipo === 'textarea' ? (
-                          <textarea
-                            value={campos[campo.chave] || ''}
-                            onChange={e => setCampos(p => ({ ...p, [campo.chave]: e.target.value }))}
-                            placeholder={campo.placeholder || campo.rotulo}
-                            rows={4}
-                            className="w-full text-sm bg-cream border border-border rounded-btn px-3 py-2 text-dark placeholder:text-faint focus:outline-none focus:ring-1 focus:ring-terra resize-y"
-                          />
-                        ) : (
-                          <input
-                            type={campo.tipo === 'data' ? 'date' : campo.tipo === 'numero' ? 'number' : 'text'}
-                            value={campos[campo.chave] || ''}
-                            onChange={e => setCampos(p => ({ ...p, [campo.chave]: e.target.value }))}
-                            placeholder={campo.placeholder || campo.rotulo}
-                            className={inputCls(false)}
-                          />
-                        )}
-                      </div>
-                    ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {camposList.map(campo => (
+                        <div key={campo.chave} className={campo.tipo === 'textarea' ? 'sm:col-span-2' : ''}>
+                          <label className="block text-xs text-muted mb-1">{campo.rotulo}</label>
+                          {campo.tipo === 'textarea' ? (
+                            <textarea
+                              value={campos[campo.chave] || ''}
+                              onChange={e => setCampos(p => ({ ...p, [campo.chave]: e.target.value }))}
+                              placeholder={campo.placeholder || campo.rotulo}
+                              rows={4}
+                              className="w-full text-sm bg-cream border border-border rounded-btn px-3 py-2 text-dark placeholder:text-faint focus:outline-none focus:ring-1 focus:ring-terra resize-y"
+                            />
+                          ) : (
+                            <input
+                              type={campo.tipo === 'data' ? 'date' : campo.tipo === 'numero' ? 'number' : 'text'}
+                              value={campos[campo.chave] || ''}
+                              onChange={e => setCampos(p => ({ ...p, [campo.chave]: e.target.value }))}
+                              placeholder={campo.placeholder || campo.rotulo}
+                              className={inputCls(false)}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
